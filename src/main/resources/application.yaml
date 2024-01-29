@@ -1,0 +1,4 @@
+skaro:
+  pokeapi:
+    base-uri: https://pokeapi.co/api/v2/
+
