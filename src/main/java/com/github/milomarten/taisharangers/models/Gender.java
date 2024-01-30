@@ -1,4 +1,4 @@
-package com.github.milomarten.taisharangers.image;
+package com.github.milomarten.taisharangers.models;
 
 import skaro.pokeapi.resource.pokemon.PokemonSprites;
 

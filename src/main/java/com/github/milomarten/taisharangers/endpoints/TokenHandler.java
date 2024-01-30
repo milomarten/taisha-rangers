@@ -1,7 +1,10 @@
 package com.github.milomarten.taisharangers.endpoints;
 
-import com.github.milomarten.taisharangers.image.Gender;
-import com.github.milomarten.taisharangers.image.ImageRetrieveService;
+import com.github.milomarten.taisharangers.image.*;
+import com.github.milomarten.taisharangers.image.sources.SolidColorSource;
+import com.github.milomarten.taisharangers.models.Gender;
+import com.github.milomarten.taisharangers.services.FrameGeneratorService;
+import com.github.milomarten.taisharangers.services.ImageRetrieveService;
 import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -23,6 +26,9 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
     private ImageRetrieveService imageRetrieveService;
 
     @Autowired
+    private FrameGeneratorService frameGeneratorService;
+
+    @Autowired
     private PokeApiClient client;
 
     @Override
@@ -38,7 +44,10 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
         return client.getResource(Pokemon.class, id)
                 .flatMap(pkmn -> {
                     try {
-                        return Mono.just(imageRetrieveService.get(pkmn, gender, shiny));
+                        var frame = frameGeneratorService.createFrame();
+                        var image = imageRetrieveService.get(pkmn, gender, shiny);
+                        ImageUtils.flatten(frame, image, BlendMode.NORMAL);
+                        return Mono.just(frame);
                     } catch (IOException e) {
                         return Mono.error(e);
                     }
@@ -46,7 +55,7 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                 .flatMap(bi -> {
                     ByteArrayOutputStream os = new ByteArrayOutputStream();
                     try {
-                        ImageIO.write(bi, "png", os);
+                        ImageIO.write(bi.getWrapped(), "png", os);
                         return ServerResponse.ok()
                                 .contentType(MediaType.IMAGE_PNG)
                                 .bodyValue(os.toByteArray());
