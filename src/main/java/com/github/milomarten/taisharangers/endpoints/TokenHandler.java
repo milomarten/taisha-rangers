@@ -8,6 +8,7 @@ import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
 import com.github.milomarten.taisharangers.image.sources.GradientSource;
 import com.github.milomarten.taisharangers.models.Gender;
 import com.github.milomarten.taisharangers.services.FrameGeneratorService;
+import com.github.milomarten.taisharangers.services.GradientGeneratorService;
 import com.github.milomarten.taisharangers.services.ImageRetrieveService;
 import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +27,16 @@ import java.io.IOException;
 
 @Component
 public class TokenHandler implements HandlerFunction<ServerResponse> {
+    public static final Point GRADIENT_START_POINT = new Point(35, 105);
+    public static final Point GRADIENT_END_POINT = new Point(105, 35);
     @Autowired
     private ImageRetrieveService imageRetrieveService;
 
     @Autowired
     private FrameGeneratorService frameGeneratorService;
+
+    @Autowired
+    private GradientGeneratorService gradientGeneratorService;
 
     @Autowired
     private PokeApiClient client;
@@ -50,13 +56,14 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                     try {
                         var image = new LayeredImage(140, 140);
                         var frame = frameGeneratorService.createFrame();
+                        var colors = gradientGeneratorService.byType(pkmn);
                         image.addLayer(frame);
                         image.addLayer(Layer.builder()
                                 .image(new GradientSource(
-                                    new Point(35,105),
-                                    new Point(105, 35),
-                                    new Color(255, 0, 0, 255),
-                                    new Color(0, 0, 255, 255)
+                                    GRADIENT_START_POINT,
+                                    GRADIENT_END_POINT,
+                                    colors.start(),
+                                    colors.end()
                                 ))
                                 .opacity(0.75)
                                 .mask(new MaskFromImage(frame))

@@ -11,6 +11,10 @@ public record Color(int rgba) {
         this(getFromComponents(r, g, b, a));
     }
 
+    public Color(int r, int g, int b) {
+        this(getFromComponents(r, g, b, 255));
+    }
+
     private static int getFromComponents(double r, double g, double b, double a) {
         return new java.awt.Color((float)r, (float)g, (float)b, (float) a).getRGB();
     }
