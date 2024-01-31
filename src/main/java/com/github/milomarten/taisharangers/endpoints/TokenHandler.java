@@ -1,7 +1,11 @@
 package com.github.milomarten.taisharangers.endpoints;
 
-import com.github.milomarten.taisharangers.image.*;
-import com.github.milomarten.taisharangers.image.sources.SolidColorSource;
+import com.github.milomarten.taisharangers.image.Color;
+import com.github.milomarten.taisharangers.image.layers.Layer;
+import com.github.milomarten.taisharangers.image.layers.LayeredImage;
+import com.github.milomarten.taisharangers.image.Point;
+import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
+import com.github.milomarten.taisharangers.image.sources.GradientSource;
 import com.github.milomarten.taisharangers.models.Gender;
 import com.github.milomarten.taisharangers.services.FrameGeneratorService;
 import com.github.milomarten.taisharangers.services.ImageRetrieveService;
@@ -44,18 +48,34 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
         return client.getResource(Pokemon.class, id)
                 .flatMap(pkmn -> {
                     try {
+                        var image = new LayeredImage(140, 140);
                         var frame = frameGeneratorService.createFrame();
-                        var image = imageRetrieveService.get(pkmn, gender, shiny);
-                        ImageUtils.flatten(frame, image, BlendMode.NORMAL);
-                        return Mono.just(frame);
-                    } catch (IOException e) {
+                        image.addLayer(frame);
+                        image.addLayer(Layer.builder()
+                                .image(new GradientSource(
+                                    new Point(35,105),
+                                    new Point(105, 35),
+                                    new Color(255, 0, 0, 255),
+                                    new Color(0, 0, 255, 255)
+                                ))
+                                .opacity(0.75)
+                                .mask(new MaskFromImage(frame))
+                                .build());
+                        image.addLayer(Layer.builder()
+                                .image(imageRetrieveService.getSprite(pkmn, gender, shiny))
+                                .offset(new Point(22, 22))
+                                .build()
+                        );
+                        return Mono.just(image.toImage());
+                    } catch (RuntimeException | IOException e) {
+                        e.printStackTrace();
                         return Mono.error(e);
                     }
                 })
                 .flatMap(bi -> {
                     ByteArrayOutputStream os = new ByteArrayOutputStream();
                     try {
-                        ImageIO.write(bi.getWrapped(), "png", os);
+                        ImageIO.write(bi, "png", os);
                         return ServerResponse.ok()
                                 .contentType(MediaType.IMAGE_PNG)
                                 .bodyValue(os.toByteArray());

@@ -1,7 +1,6 @@
 package com.github.milomarten.taisharangers.image.sources;
 
 import com.github.milomarten.taisharangers.image.Color;
-import com.github.milomarten.taisharangers.image.ImageUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

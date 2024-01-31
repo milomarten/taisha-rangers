@@ -14,7 +14,7 @@ import java.net.URL;
 @Service
 public class ImageRetrieveService {
 
-    public BufferedImageSource get(Pokemon pkmn, Gender gender, boolean shiny) throws IOException {
+    public BufferedImageSource getSprite(Pokemon pkmn, Gender gender, boolean shiny) throws IOException {
         String url = gender.getSprite(pkmn.getSprites(), shiny);
         BufferedImage source = ImageIO.read(new URL(url));
 

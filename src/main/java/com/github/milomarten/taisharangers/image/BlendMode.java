@@ -1,6 +1,6 @@
 package com.github.milomarten.taisharangers.image;
 
-public enum BlendMode {
+public enum BlendMode implements BlendAlgorithm {
     /**
      * Standard blending, which composites the top layer over the bottom using standard rules.
      */
@@ -9,23 +9,12 @@ public enum BlendMode {
         public Color blend(Color top, Color bottom) {
             return alphaComposite(top, bottom);
         }
-    },
-    /**
-     * Mask blending, which returns the top color at the same alpha as the bottom value.
-     */
-    MASK {
-        @Override
-        public Color blend(Color top, Color bottom) {
-            return top.withAlpha(bottom.alpha());
-        }
     }
     ;
 
-    public abstract Color blend(Color top, Color bottom);
-
     protected static Color alphaComposite(Color top, Color bottom) {
-        double bottomAlpha = bottom.alpha();
-        double topAlpha = top.alpha();
+        double bottomAlpha = bottom.alpha01();
+        double topAlpha = top.alpha01();
 
         if (topAlpha == 1) { return top; }
         else if(topAlpha == 0) { return bottom; }

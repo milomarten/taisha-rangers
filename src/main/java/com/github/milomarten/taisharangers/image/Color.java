@@ -7,7 +7,7 @@ public record Color(int rgba) {
         this(getFromComponents(r, g, b, a));
     }
 
-    public Color(int r, int g, int b, double a) {
+    public Color(int r, int g, int b, int a) {
         this(getFromComponents(r, g, b, a));
     }
 
@@ -15,8 +15,8 @@ public record Color(int rgba) {
         return new java.awt.Color((float)r, (float)g, (float)b, (float) a).getRGB();
     }
 
-    private static int getFromComponents(int r, int g, int b, double a) {
-        return new java.awt.Color(r, g, b, (float)a).getRGB();
+    private static int getFromComponents(int r, int g, int b, int a) {
+        return new java.awt.Color(r, g, b, a).getRGB();
     }
 
     private int component(int shift) {
@@ -25,7 +25,12 @@ public record Color(int rgba) {
     public int red() { return component(2); }
     public int green() { return component(1); }
     public int blue() { return component(0); }
-    public double alpha() { return component(3) / 255.0; }
+    public int alpha() { return component(3); }
+
+    public double red01() { return red() / 255.0; }
+    public double green01() { return green() / 255.0; }
+    public double blue01() { return blue() / 255.0; }
+    public double alpha01() { return alpha() / 255.0; }
 
     public int[] components() {
         var c = new int[4];
@@ -37,8 +42,12 @@ public record Color(int rgba) {
         return c;
     }
 
-    public Color withAlpha(double newA) {
+    public Color withAlpha(int newA) {
         var components = components();
-        return new Color(components[0], components[1], components[2], newA);
+        return new Color(components[2], components[1], components[0], newA);
+    }
+
+    public Color withAlpha01(double newA) {
+        return withAlpha(((int)(newA * 255)) & 0xFF);
     }
 }
