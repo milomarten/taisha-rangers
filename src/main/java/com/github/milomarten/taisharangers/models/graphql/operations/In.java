@@ -1,4 +1,4 @@
-package com.github.milomarten.taisharangers.services.query;
+package com.github.milomarten.taisharangers.models.graphql.operations;
 
 import java.util.List;
 

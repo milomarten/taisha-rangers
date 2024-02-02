@@ -1,4 +1,4 @@
-package com.github.milomarten.taisharangers.services.query;
+package com.github.milomarten.taisharangers.models.graphql.query;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
