@@ -1,9 +1,8 @@
 package com.github.milomarten.taisharangers.endpoints;
 
-import com.github.milomarten.taisharangers.image.Color;
+import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.layers.Layer;
 import com.github.milomarten.taisharangers.image.layers.LayeredImage;
-import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
 import com.github.milomarten.taisharangers.image.sources.GradientSource;
 import com.github.milomarten.taisharangers.models.Gender;
@@ -27,8 +26,10 @@ import java.io.IOException;
 
 @Component
 public class TokenHandler implements HandlerFunction<ServerResponse> {
-    public static final Point GRADIENT_START_POINT = new Point(35, 105);
-    public static final Point GRADIENT_END_POINT = new Point(105, 35);
+    private static final Point GRADIENT_START_POINT = new Point(35, 105);
+    private static final Point GRADIENT_END_POINT = new Point(105, 35);
+    private static final String RANDOM_ID = "RANDOM";
+
     @Autowired
     private ImageRetrieveService imageRetrieveService;
 
@@ -41,6 +42,9 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
     @Autowired
     private PokeApiClient client;
 
+    @Autowired
+    private RandomHandler randomHandler;
+
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
         String id = request.pathVariable("id");
@@ -51,7 +55,9 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                 .map(Boolean::parseBoolean)
                 .orElse(false);
 
-        return client.getResource(Pokemon.class, id)
+        return (RANDOM_ID.equalsIgnoreCase(id) ?
+                randomHandler.handleNoResponse(request) :
+                client.getResource(Pokemon.class, id))
                 .flatMap(pkmn -> {
                     try {
                         var image = new LayeredImage(140, 140);
