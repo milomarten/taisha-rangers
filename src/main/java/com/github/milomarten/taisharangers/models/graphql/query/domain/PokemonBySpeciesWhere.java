@@ -24,4 +24,7 @@ public class PokemonBySpeciesWhere extends Where {
 
     @JsonProperty("pokemon_v2_evolutionchain")
     private EvolutionChainWhere evolutionChain;
+
+    @JsonProperty("generation_id")
+    private Operation<Integer> generationId;
 }
