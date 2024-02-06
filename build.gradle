@@ -36,6 +36,7 @@ dependencies {
 
 	implementation 'skaro.pokeapi:pokeapi-reactor:1.0.6'
 	implementation 'org.apache.commons:commons-lang3:3.14.0'
+	implementation 'com.discord4j:discord4j-core:3.2.5'
 
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

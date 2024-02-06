@@ -32,9 +32,9 @@ public class PokemonHandler implements HandlerFunction<ServerResponse>  {
     }
 
     Mono<Pokemon> handleNoResponse(ServerRequest request) {
-        var builder = PokemonSearchParams.builder();
-        request.queryParam("type").map(s -> s.split(",")).map(Arrays::asList).ifPresent(builder::types);
-        request.queryParam("ability").map(s -> s.split(",")).map(Arrays::asList).ifPresent(builder::ability);
+        var builder = PokemonSearchParams.builder()
+                .types(request.queryParams().get("type"))
+                .ability(request.queryParams().get("ability"));
         request.queryParam("legendary").map("true"::equals).ifPresent(builder::legendary);
         request.queryParam("evolved").map("true"::equals).ifPresent(builder::isEvolved);
         request.queryParam("evolutionchain").map(Integer::parseInt).ifPresent(builder::evolutionChain);
