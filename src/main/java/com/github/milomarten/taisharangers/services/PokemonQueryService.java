@@ -121,7 +121,6 @@ public class PokemonQueryService {
                     }
                 }
                 """, label, whereClause);
-        System.out.println(queryStr);
 
         return graphQlClient.document(queryStr)
                 .retrieve(label);

@@ -11,10 +11,10 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 @Component
 public class EndpointDefinitions {
     @Bean
-    public RouterFunction<ServerResponse> routes(TokenHandler handler, RandomHandler randomHandler) {
+    public RouterFunction<ServerResponse> routes(TokenHandler tokenHandler, PokemonHandler pokemonHandler) {
         return route()
-                .GET("/token/{id}", handler)
-                .GET("/pokemon/random", randomHandler)
+                .GET("/token/{id}", tokenHandler)
+                .GET("/pokemon/{id}", pokemonHandler)
                 .onError(t -> true, (thrown, req) -> {
                     return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .bodyValue("Error: " + thrown.getMessage());

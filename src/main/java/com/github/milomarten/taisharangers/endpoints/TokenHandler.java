@@ -42,13 +42,11 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
 
     private final PokeApiClient client;
 
-    private final ImageRetrieveService imageRetrieveService;
-
     private final FrameGeneratorService frameGeneratorService;
 
     private final ColorGeneratorService colorGeneratorService;
 
-    private final RandomHandler randomHandler;
+    private final PokemonHandler pokemonHandler;
 
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
@@ -67,7 +65,7 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                 .map(TypeGradient::getDarker);
 
         return (RANDOM_ID.equalsIgnoreCase(id) ?
-                randomHandler.handleNoResponse(request) :
+                pokemonHandler.handleNoResponse(request) :
                 client.getResource(Pokemon.class, id))
                 .flatMap(pkmn -> {
                     try {
