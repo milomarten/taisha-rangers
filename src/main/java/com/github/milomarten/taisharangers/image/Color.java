@@ -2,6 +2,7 @@ package com.github.milomarten.taisharangers.image;
 
 public record Color(int rgba) {
     public static final Color TRANSPARENT = new Color(0);
+    public static final Color WHITE = new Color(0, 0, 0, 255);
 
     public Color(double r, double g, double b, double a) {
         this(getFromComponents(r, g, b, a));
