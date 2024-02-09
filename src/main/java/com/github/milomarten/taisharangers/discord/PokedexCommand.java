@@ -1,10 +1,6 @@
 package com.github.milomarten.taisharangers.discord;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.command.ApplicationCommandEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.Embed;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -13,22 +9,17 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.Color;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import skaro.pokeapi.client.PokeApiClient;
 import skaro.pokeapi.resource.NamedApiResource;
-import skaro.pokeapi.resource.ability.Ability;
 import skaro.pokeapi.resource.pokemon.Pokemon;
 import skaro.pokeapi.resource.pokemon.PokemonAbility;
 import skaro.pokeapi.resource.pokemonspecies.PokemonSpecies;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -36,41 +27,17 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnBean(GatewayDiscordClient.class)
-public class DiscordCommands implements ApplicationRunner {
-    private final GatewayDiscordClient gateway;
-
+public class PokedexCommand implements Command {
     private final PokeApiClient client;
 
-    @PreDestroy
-    private void spinDown() {
-        gateway.logout().block();
+    @Override
+    public String getName() {
+        return "pokedex";
     }
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
-//        setupCommand();
-
-        //Code goes here I suppose!
-        gateway.on(ChatInputInteractionEvent.class, chat -> {
-                    var name = chat.getCommandName();
-
-                    if (name.equals("pokedex")) {
-                        return pokedex(chat);
-                    }
-                    return chat.reply("No idea what that means").withEphemeral(true);
-                })
-                .onErrorResume(t -> {
-                    t.printStackTrace();
-                    return Mono.empty();
-                })
-                .subscribe();
-    }
-
-    private void setupCommand() {
-        var appId = gateway.getRestClient().getApplicationId().block();
-
-        var request = ApplicationCommandRequest.builder()
+    public ApplicationCommandRequest getDiscordSpec() {
+        return ApplicationCommandRequest.builder()
                 .name("pokedex")
                 .description("Look up any Pokemon in the Pokedex, powered by PokeAPI")
                 .addOption(ApplicationCommandOptionData.builder()
@@ -80,39 +47,47 @@ public class DiscordCommands implements ApplicationRunner {
                         .description("The Pokemon's name or Dex Number")
                         .build()
                 )
+                .addOption(ApplicationCommandOptionData.builder()
+                        .name("share")
+                        .required(false)
+                        .type(ApplicationCommandOption.Type.BOOLEAN.getValue())
+                        .description("If true, output is visible to all. By default, will only be seen by you.")
+                        .build()
+                )
                 .build();
-
-        gateway.getRestClient()
-                .getApplicationService()
-                .createGuildApplicationCommand(appId, 902681369405173840L, request)
-                .block();
     }
 
-    private Mono<Void> pokedex(ChatInputInteractionEvent event) {
+    @Override
+    public Mono<Void> handle(ChatInputInteractionEvent event) {
         var name = event.getOption("name")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
+        var share = event.getOption("share")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asBoolean)
+                .orElse(false);
+
         if (name.isEmpty()) {
             return event.reply()
                     .withEphemeral(true)
                     .withContent("Need a Pokemon's name or ID number!");
         }
 
-        return event.deferReply()
+        return event.deferReply().withEphemeral(!share)
                 .then(client.getResource(Pokemon.class, name.get()))
                 .zipWhen(pkmn -> client.followResource(pkmn::getSpecies, PokemonSpecies.class))
                 .flatMap(tuple -> {
                     var pkmn = tuple.getT1();
                     var species = tuple.getT2();
                     return event.editReply(InteractionReplyEditSpec.builder()
-                                    .addEmbed(EmbedCreateSpec.builder()
+                            .addEmbed(EmbedCreateSpec.builder()
                                     .title(String.format("#%03d %s", pkmn.getId(), capitalize(pkmn.getName())))
                                     .description(getFlavorText(species))
                                     .author("PokéAPI", "https://pokeapi.co/", "https://pokeapi.co/static/pokeapi_256.3fa72200.png")
                                     .addField("Types", formatMulti(pkmn.getTypes(), t -> t.getType().getName()), true)
                                     .addField("Height", formatDecaUnits(pkmn.getHeight(), "m"), true)
                                     .addField("Weight", formatDecaUnits(pkmn.getWeight(), "kg"), true)
-                                    .addField("Abilities", formatMulti(pkmn.getAbilities(), DiscordCommands::formatAbility), true)
+                                    .addField("Abilities", formatAbilities(pkmn.getAbilities()), true)
                                     .addField("Egg Groups", formatMulti(species.getEggGroups(), NamedApiResource::getName), true)
                                     .addAllFields(makeStatFields(pkmn))
                                     .thumbnail(String.format("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/%d.png", pkmn.getId()))
@@ -127,13 +102,24 @@ public class DiscordCommands implements ApplicationRunner {
         } else {
             return list.stream()
                     .map(extract)
-                    .map(DiscordCommands::capitalize)
+                    .map(PokedexCommand::capitalize)
                     .collect(Collectors.joining(" / "));
         }
     }
 
-    private static String formatAbility(PokemonAbility a) {
-        return a.getIsHidden() ? String.format("*%s*", capitalize(a.getAbility().getName())) : a.getAbility().getName();
+    private static String formatAbilities(List<PokemonAbility> abilities) {
+        // create a list of all regular and hidden abilities, removing any hidden abilities identical to normal ones.
+        var regularandHidden = abilities.stream()
+                .collect(Collectors.partitioningBy(PokemonAbility::getIsHidden,
+                        Collectors.mapping(a -> capitalize(a.getAbility().getName()), Collectors.toList())));
+        var normalizedList = new ArrayList<>(regularandHidden.get(false));
+        regularandHidden.get(true)
+                .forEach(a -> {
+                    if (!normalizedList.contains(a)) {
+                        normalizedList.add("*" + a + "*");
+                    }
+                });
+        return formatMulti(normalizedList, Function.identity());
     }
 
     private static String formatDecaUnits(int height, String unit) {
