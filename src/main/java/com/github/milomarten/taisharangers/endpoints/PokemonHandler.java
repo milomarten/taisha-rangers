@@ -12,9 +12,6 @@ import reactor.core.publisher.Mono;
 import skaro.pokeapi.client.PokeApiClient;
 import skaro.pokeapi.resource.pokemon.Pokemon;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 @Component
 @RequiredArgsConstructor
 public class PokemonHandler implements HandlerFunction<ServerResponse>  {

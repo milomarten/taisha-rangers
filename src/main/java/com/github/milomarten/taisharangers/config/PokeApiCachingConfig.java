@@ -13,7 +13,6 @@ import reactor.netty.resources.ConnectionProvider;
 import skaro.pokeapi.PokeApiReactorCachingConfiguration;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Configuration
 @Import(PokeApiReactorCachingConfiguration.class)

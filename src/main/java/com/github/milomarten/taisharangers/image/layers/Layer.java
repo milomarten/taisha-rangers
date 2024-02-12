@@ -5,7 +5,9 @@ import com.github.milomarten.taisharangers.image.BlendMode;
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.sources.ImageSource;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter

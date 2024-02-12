@@ -1,6 +1,5 @@
 package com.github.milomarten.taisharangers.discord;
 
-import com.github.milomarten.taisharangers.discord.commands.Command;
 import com.github.milomarten.taisharangers.discord.commands.SupportsAutocomplete;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
@@ -13,9 +12,6 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.WordUtils;
-import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.apache.commons.text.similarity.SimilarityScore;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -23,11 +19,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 @ConditionalOnBean(GatewayDiscordClient.class)

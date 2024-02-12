@@ -1,20 +1,13 @@
 package com.github.milomarten.taisharangers.discord;
 
-import com.github.milomarten.taisharangers.discord.commands.Command;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.discordjson.json.ApplicationCommandRequest;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.SetUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Component
 @ConditionalOnBean(GatewayDiscordClient.class)

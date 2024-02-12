@@ -12,8 +12,6 @@ import com.github.milomarten.taisharangers.models.graphql.query.TypeWhere;
 import com.github.milomarten.taisharangers.models.graphql.query.domain.*;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.WordUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.graphql.client.GraphQlClient;

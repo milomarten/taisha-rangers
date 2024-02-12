@@ -1,15 +1,15 @@
 package com.github.milomarten.taisharangers.endpoints;
 
-import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.Color;
+import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.gradients.TypeGradient;
 import com.github.milomarten.taisharangers.image.layers.Layer;
 import com.github.milomarten.taisharangers.image.layers.LayeredImage;
 import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
 import com.github.milomarten.taisharangers.image.sources.GradientSource;
 import com.github.milomarten.taisharangers.models.Gender;
-import com.github.milomarten.taisharangers.services.FrameGeneratorService;
 import com.github.milomarten.taisharangers.services.ColorGeneratorService;
+import com.github.milomarten.taisharangers.services.FrameGeneratorService;
 import com.github.milomarten.taisharangers.services.ImageRetrieveService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.EnumUtils;

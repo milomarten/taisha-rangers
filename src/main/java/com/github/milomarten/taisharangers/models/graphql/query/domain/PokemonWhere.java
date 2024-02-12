@@ -3,7 +3,9 @@ package com.github.milomarten.taisharangers.models.graphql.query.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.milomarten.taisharangers.models.graphql.operations.Operation;
 import com.github.milomarten.taisharangers.models.graphql.query.Where;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder

@@ -1,7 +1,6 @@
 package com.github.milomarten.taisharangers.services;
 
 import com.github.milomarten.taisharangers.image.sources.BufferedImageSource;
-import com.github.milomarten.taisharangers.image.sources.WriteableImageSource;
 import jakarta.annotation.PostConstruct;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;

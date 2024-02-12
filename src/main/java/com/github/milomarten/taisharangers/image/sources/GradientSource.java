@@ -4,7 +4,6 @@ import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.Point;
 
 import java.util.OptionalInt;
-import java.util.function.DoubleFunction;
 
 public class GradientSource implements ImageSource {
     private final Point start;
