@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 @Component
@@ -86,8 +87,8 @@ public class PokedexCommand implements Command {
                                     .description(getFlavorText(species))
                                     .author("PokéAPI", "https://pokeapi.co/", "https://pokeapi.co/static/pokeapi_256.3fa72200.png")
                                     .addField("Types", formatMulti(pkmn.getTypes(), t -> t.getType().getName()), true)
-                                    .addField("Height", formatDecaUnits(pkmn.getHeight(), "m"), true)
-                                    .addField("Weight", formatDecaUnits(pkmn.getWeight(), "kg"), true)
+                                    .addField("Height", formatDecaUnits(pkmn.getHeight(), Unit.METERS), true)
+                                    .addField("Weight", formatDecaUnits(pkmn.getWeight(), Unit.KILOGRAMS), true)
                                     .addField("Abilities", formatAbilities(pkmn.getAbilities()), true)
                                     .addField("Egg Groups", formatMulti(species.getEggGroups(), NamedApiResource::getName), true)
                                     .addAllFields(makeStatFields(pkmn))
@@ -125,10 +126,8 @@ public class PokedexCommand implements Command {
         return formatMulti(normalizedList, Function.identity());
     }
 
-    private static String formatDecaUnits(int height, String unit) {
-        int whole = height / 10;
-        int decimal = height % 10;
-        return String.format("%d.%d %s", whole, decimal, unit);
+    private static String formatDecaUnits(int deca, Unit unit) {
+        return String.format("%2.1f %s (%s)", deca / 10.0, unit.symbol, unit.toImperial(deca));
     }
 
     private static List<EmbedCreateFields.Field> makeStatFields(Pokemon pkmn) {
@@ -171,5 +170,24 @@ public class PokedexCommand implements Command {
             case "yellow" -> Color.YELLOW;
             default -> Color.ORANGE;
         };
+    }
+
+    @RequiredArgsConstructor
+    private enum Unit {
+        METERS("m", i -> {
+            var inches = i * 4; // True factor is 3.937
+            return String.format("%d' %d\"", inches / 12, inches % 12);
+        }),
+        KILOGRAMS("kg", i -> {
+            var pounds = i * 0.2204; // True pounds, rather than going through some other unit. More accurate
+            return String.format("%2.1f lbs", pounds);
+        })
+        ;
+        private final String symbol;
+        private final IntFunction<String> converted;
+
+        public String toImperial(int deca) {
+            return this.converted.apply(deca);
+        }
     }
 }
