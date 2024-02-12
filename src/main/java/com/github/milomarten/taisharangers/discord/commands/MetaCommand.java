@@ -90,7 +90,7 @@ public class MetaCommand implements Command, SupportsAutocomplete {
         return switch (op) {
             case INIT_COMMAND -> makeReply(callBackend(
                     discordCommandService.initializeCommand(id),
-                    "Command `" + id + " was created!",
+                    "Command `" + id + "` was created!",
                     "Command `" + id + "` was not able to be created. Is the name correct?",
                     "Encountered an error while creating. Check the logs."
             ), event);

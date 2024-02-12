@@ -11,10 +11,12 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Color;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import skaro.pokeapi.client.PokeApiClient;
+import skaro.pokeapi.resource.Name;
 import skaro.pokeapi.resource.NamedApiResource;
 import skaro.pokeapi.resource.pokemon.Pokemon;
 import skaro.pokeapi.resource.pokemon.PokemonAbility;
@@ -83,7 +85,7 @@ public class PokedexCommand implements Command {
                     var species = tuple.getT2();
                     return event.editReply(InteractionReplyEditSpec.builder()
                             .addEmbed(EmbedCreateSpec.builder()
-                                    .title(String.format("#%03d %s", pkmn.getId(), capitalize(pkmn.getName())))
+                                    .title(String.format("#%03d %s", pkmn.getId(), getName(species)))
                                     .description(getFlavorText(species))
                                     .author("PokéAPI", "https://pokeapi.co/", "https://pokeapi.co/static/pokeapi_256.3fa72200.png")
                                     .addField("Types", formatMulti(pkmn.getTypes(), t -> t.getType().getName()), true)
@@ -98,6 +100,15 @@ public class PokedexCommand implements Command {
                 })
                 .onErrorResume(t -> event.editReply("Error finding that Pokemon. Are you sure you spelled it right?"))
                 .then();
+    }
+
+    private static String getName(PokemonSpecies species) {
+        return species.getNames()
+                .stream()
+                .filter(n -> "en".equals(n.getLanguage().getName()))
+                .findFirst()
+                .map(Name::getName)
+                .orElseGet(() -> StringUtils.capitalize(species.getName()));
     }
 
     private static <T> String formatMulti(List<T> list, Function<T, String> extract) {

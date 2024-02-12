@@ -30,6 +30,8 @@ public class DiscordCommandService {
     private void setUp() {
         this.applicationId = gateway.getRestClient().getApplicationId().blockOptional()
                 .orElseThrow(() -> new IllegalStateException("Couldn't get Application ID"));
+
+//        initializeCommand("commands").subscribe();
     }
 
     public Mono<Boolean> initializeCommand(String id) {
