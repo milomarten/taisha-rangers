@@ -1,6 +1,8 @@
 package com.github.milomarten.taisharangers.discord;
 
+import com.github.milomarten.taisharangers.discord.commands.Command;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.SetUtils;
@@ -21,46 +23,35 @@ public class DiscordCommandService {
     private static final long GUILD_ID = 902681369405173840L;
 
     private final GatewayDiscordClient gateway;
-    private final List<Command> commands;
-    private Map<String, Command> commandsByName;
+    private final CommandPool commands;
     private long applicationId;
+
     @PostConstruct
     private void setUp() {
-        var appId = gateway.getRestClient().getApplicationId().block();
-        if (appId == null) {
-            throw new IllegalStateException("Couldn't get Application ID");
-        }
-        this.applicationId = appId;
-
-        this.commandsByName = this.commands.stream()
-                .collect(Collectors.toMap(Command::getName, Function.identity()));
+        this.applicationId = gateway.getRestClient().getApplicationId().blockOptional()
+                .orElseThrow(() -> new IllegalStateException("Couldn't get Application ID"));
     }
 
     public Mono<Boolean> initializeCommand(String id) {
-        var cmd = commandsByName.get(id);
-        if (cmd == null) {
-            return Mono.just(false);
-        }
+        var cmd = commands.getCommandByName(id);
+        return cmd.map(command -> gateway.getRestClient().getApplicationService()
+                    .createGuildApplicationCommand(this.applicationId, GUILD_ID, command.getDiscordSpec())
+                    .thenReturn(true))
+                .orElseGet(() -> Mono.just(false));
 
-        return gateway.getRestClient().getApplicationService()
-                .createGuildApplicationCommand(this.applicationId, GUILD_ID, cmd.getDiscordSpec())
-                .thenReturn(true);
     }
 
     public Mono<Boolean> updateCommand(String id) {
-        var cmd = commandsByName.get(id);
-        if (cmd == null) {
-            return Mono.just(false);
-        }
-
-        return gateway.getRestClient().getApplicationService()
-                .bulkOverwriteGuildApplicationCommand(this.applicationId, GUILD_ID, List.of(cmd.getDiscordSpec()))
-                .then(Mono.just(true));
+        var cmd = commands.getCommandByName(id);
+        return cmd.map(command -> gateway.getRestClient().getApplicationService()
+                    .bulkOverwriteGuildApplicationCommand(this.applicationId, GUILD_ID, List.of(command.getDiscordSpec()))
+                    .then(Mono.just(true)))
+                .orElseGet(() -> Mono.just(false));
     }
 
     public Mono<Boolean> deleteCommand(String id) {
-        var cmd = commandsByName.get(id);
-        if (cmd == null) {
+        var cmd = commands.getCommandByName(id);
+        if (cmd.isEmpty()) {
             return Mono.just(false);
         }
 

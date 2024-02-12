@@ -1,4 +1,4 @@
-package com.github.milomarten.taisharangers.discord;
+package com.github.milomarten.taisharangers.discord.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;

@@ -1,4 +1,4 @@
-package com.github.milomarten.taisharangers.discord;
+package com.github.milomarten.taisharangers.discord.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -11,6 +11,7 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Color;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.text.WordUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import skaro.pokeapi.client.PokeApiClient;
@@ -93,7 +94,9 @@ public class PokedexCommand implements Command {
                                     .thumbnail(String.format("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/%d.png", pkmn.getId()))
                                     .color(extractColor(species.getColor().getName()))
                                     .build()).build());
-                }).then();
+                })
+                .onErrorResume(t -> event.editReply("Error finding that Pokemon. Are you sure you spelled it right?"))
+                .then();
     }
 
     private static <T> String formatMulti(List<T> list, Function<T, String> extract) {
@@ -141,7 +144,7 @@ public class PokedexCommand implements Command {
 
     private static String capitalize(String in) {
         return Arrays.stream(in.split("-"))
-                .map(s -> Character.toUpperCase(s.charAt(0)) + s.substring(1))
+                .map(WordUtils::capitalize)
                 .collect(Collectors.joining(" "));
     }
 
