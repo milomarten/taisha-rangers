@@ -25,7 +25,8 @@ public class RandomPokemonService {
                         return Flux.empty();
                     }
                     return Flux.range(0, qty)
-                            .map(x -> i.get(rng.nextInt(0, i.size())));
+                            .map(x -> i.get(rng.nextInt(0, i.size())))
+                            .map(q -> q.id);
                 })
                 .flatMap(i -> client.getResource(Pokemon.class, String.valueOf(i)));
     }

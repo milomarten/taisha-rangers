@@ -2,6 +2,7 @@ package com.github.milomarten.taisharangers.models;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Singular;
 
 import java.util.List;
 import java.util.OptionalInt;
@@ -13,12 +14,12 @@ public class PokemonSearchParams {
      * Return a Pokemon that has one of these types.
      * Null or empty indicates indifference
      */
-    private List<String> types;
+    @Singular private List<String> types;
     /**
      * Return a Pokemon that has one of these abilities.
      * Null or empty indicates indifference
      */
-    private List<String> ability;
+    @Singular private List<String> abilities;
     /**
      * Return a legendary Pokemon.
      * null indicates indifference.

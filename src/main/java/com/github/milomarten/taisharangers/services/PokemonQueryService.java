@@ -12,6 +12,8 @@ import com.github.milomarten.taisharangers.models.graphql.query.TypeWhere;
 import com.github.milomarten.taisharangers.models.graphql.query.domain.*;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.graphql.client.GraphQlClient;
@@ -43,7 +45,7 @@ public class PokemonQueryService {
      * @return The found Pokemon IDs matching the query
      */
     @Cacheable("pokemon-queries")
-    public Mono<List<Integer>> searchPokemon(PokemonSearchParams params) {
+    public Mono<List<QLResult>> searchPokemon(PokemonSearchParams params) {
         return Mono.defer(() -> _searchPokemon(params))
                 .cache(
                         (s) -> Duration.ofHours(24),
@@ -52,7 +54,7 @@ public class PokemonQueryService {
                 );
     }
 
-    private Mono<List<Integer>> _searchPokemon(PokemonSearchParams params) {
+    private Mono<List<QLResult>> _searchPokemon(PokemonSearchParams params) {
         var pq = PokemonQuery.builder()
                 .where(buildWhereFromParams(params))
                 .build();
@@ -61,7 +63,6 @@ public class PokemonQueryService {
             return retrieve(pq)
                     .toEntity(new ParameterizedTypeReference<List<QLResult>>() {
                     })
-                    .map(r -> r.stream().map(QLResult::getId).toList())
                     .cache();
 
         } catch (JsonProcessingException e) {
@@ -73,38 +74,40 @@ public class PokemonQueryService {
         var where = PokemonWhere.builder();
 
         if (!params.isIncludeUnusual()) {
-                where = where.isDefault(new Equals<>(true));
+            where = where.isDefault(new Equals<>(true));
         }
 
         if (ObjectUtils.anyNotNull(params.getIsEvolved(), params.getLegendary(), params.getMinGeneration(), params.getMaxGeneration())) {
-                where = where.specy(PokemonBySpeciesWhere.builder()
-                    .evolvesFromSpeciesId(params.getIsEvolved() == null ? null : new IsNull<>(!params.getIsEvolved()))
-                    .isLegendary(params.getLegendary() == null ? null : new Equals<>(params.getLegendary()))
-                    .generationId(GraphQLOperationUtils.range(params.getMinGeneration(), params.getMaxGeneration()))
-                    .evolutionChain(params.getEvolutionChain().isEmpty() ? null : EvolutionChainWhere.builder()
-                            .speciesAggregate(PokemonBySpeciesAggregateWhere.builder()
-                                    .count(AggregateCount.builder()
-                                            .predicate(new Equals<>(params.getEvolutionChain().getAsInt()))
-                                            .build())
-                                    .build())
-                            .build())
-                    .build());
+            where = where.specy(PokemonBySpeciesWhere.builder()
+                .evolvesFromSpeciesId(params.getIsEvolved() == null ? null : new IsNull<>(!params.getIsEvolved()))
+                .isLegendary(params.getLegendary() == null ? null : new Equals<>(params.getLegendary()))
+                .generationId(GraphQLOperationUtils.range(params.getMinGeneration(), params.getMaxGeneration()))
+                .evolutionChain(params.getEvolutionChain().isEmpty() ? null : EvolutionChainWhere.builder()
+                        .speciesAggregate(PokemonBySpeciesAggregateWhere.builder()
+                                .count(AggregateCount.builder()
+                                        .predicate(new Equals<>(params.getEvolutionChain().getAsInt()))
+                                        .build())
+                                .build())
+                        .build())
+                .build());
         }
 
         if (!CollectionUtils.isEmpty(params.getTypes())) {
-                where = where.type(PokemonByTypeWhere.builder()
-                    .type(TypeWhere.builder()
-                            .name(params.getTypes() == null ? null : GraphQLOperationUtils.equalsOrIn(params.getTypes()))
-                            .build())
-                    .build());
+            var typesNormalized = params.getTypes().stream().map(String::toLowerCase).toList();
+            where = where.type(PokemonByTypeWhere.builder()
+                .type(TypeWhere.builder()
+                        .name(params.getTypes() == null ? null : GraphQLOperationUtils.equalsOrIn(typesNormalized))
+                        .build())
+                .build());
         }
 
-        if (!CollectionUtils.isEmpty(params.getAbility())) {
-                where = where.ability(PokemonByAbilityWhere.builder()
-                    .ability(AbilityWhere.builder()
-                            .name(params.getAbility() == null ? null : GraphQLOperationUtils.equalsOrIn(params.getAbility()))
-                            .build())
-                    .build());
+        if (!CollectionUtils.isEmpty(params.getAbilities())) {
+            var abilitiesNormalized = params.getAbilities().stream().map(String::toLowerCase).toList();
+            where = where.ability(PokemonByAbilityWhere.builder()
+                .ability(AbilityWhere.builder()
+                        .name(params.getAbilities() == null ? null : GraphQLOperationUtils.equalsOrIn(abilitiesNormalized))
+                        .build())
+                .build());
         }
 
         return where.build();
@@ -117,7 +120,8 @@ public class PokemonQueryService {
         var queryStr = String.format("""
                 query pokemonQuery {
                     %s(where: %s) {
-                        id
+                        id,
+                        name
                     }
                 }
                 """, label, whereClause);
@@ -129,5 +133,6 @@ public class PokemonQueryService {
     @Data
     public static class QLResult {
         int id;
+        String name;
     }
 }
