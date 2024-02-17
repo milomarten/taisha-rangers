@@ -1,6 +1,7 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
 import com.github.milomarten.taisharangers.discord.StandardParams;
+import com.github.milomarten.taisharangers.discord.mapper.PokemonEmbedMapper;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -16,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 import skaro.pokeapi.client.PokeApiClient;
 import skaro.pokeapi.resource.Name;
 import skaro.pokeapi.resource.NamedApiResource;
@@ -34,8 +36,10 @@ import static com.github.milomarten.taisharangers.discord.StandardParams.SHARE_P
 
 @Component
 @RequiredArgsConstructor
-public class PokedexCommand implements Command {
+public class PokedexCommand extends AsyncResponseCommand<String, Tuple2<Pokemon, PokemonSpecies>> {
     private final PokeApiClient client;
+
+    private final PokemonEmbedMapper embedMapper;
 
     @Override
     public String getName() {
@@ -59,143 +63,63 @@ public class PokedexCommand implements Command {
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
-        var name = event.getOption("name")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        var share = event.getOption(SHARE_PARAMETER)
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asBoolean)
-                .orElse(false);
-
-        if (name.isEmpty()) {
-            return event.reply()
-                    .withEphemeral(true)
-                    .withContent("Need a Pokemon's name or ID number!");
-        }
-
-        return event.deferReply().withEphemeral(!share)
-                .then(client.getResource(Pokemon.class, name.get()))
-                .zipWhen(pkmn -> client.followResource(pkmn::getSpecies, PokemonSpecies.class))
-                .flatMap(tuple -> {
-                    var pkmn = tuple.getT1();
-                    var species = tuple.getT2();
-                    return event.editReply(InteractionReplyEditSpec.builder()
-                            .addEmbed(EmbedCreateSpec.builder()
-                                    .title(String.format("#%03d %s", pkmn.getId(), getName(species)))
-                                    .description(getFlavorText(species))
-                                    .author("PokéAPI", "https://pokeapi.co/", "https://pokeapi.co/static/pokeapi_256.3fa72200.png")
-                                    .addField("Types", formatMulti(pkmn.getTypes(), t -> t.getType().getName()), true)
-                                    .addField("Height", formatDecaUnits(pkmn.getHeight(), Unit.METERS), true)
-                                    .addField("Weight", formatDecaUnits(pkmn.getWeight(), Unit.KILOGRAMS), true)
-                                    .addField("Abilities", formatAbilities(pkmn.getAbilities()), true)
-                                    .addField("Egg Groups", formatMulti(species.getEggGroups(), NamedApiResource::getName), true)
-                                    .addAllFields(makeStatFields(pkmn))
-                                    .thumbnail(String.format("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/%d.png", pkmn.getId()))
-                                    .color(extractColor(species.getColor().getName()))
-                                    .build()).build());
-                })
-                .onErrorResume(t -> event.editReply("Error finding that Pokemon. Are you sure you spelled it right?"))
-                .then();
+    protected boolean isEphemeral(ChatInputInteractionEvent event) {
+        return !StandardParams.isShare(event);
     }
 
-    private static String getName(PokemonSpecies species) {
-        return species.getNames()
-                .stream()
-                .filter(n -> "en".equals(n.getLanguage().getName()))
-                .findFirst()
-                .map(Name::getName)
-                .orElseGet(() -> StringUtils.capitalize(species.getName()));
+    @Override
+    protected Try<String> parseParameters(ChatInputInteractionEvent event) {
+        return event.getOption("name")
+                .flatMap(a -> a.getValue())
+                .map(a -> a.asString())
+                .map(Try::success)
+                .orElseGet(() -> Try.failure("Need a Pokemon's name or ID!"));
     }
 
-    private static <T> String formatMulti(List<T> list, Function<T, String> extract) {
-        if (list.size() == 1) {
-            return capitalize(extract.apply(list.get(0)));
-        } else {
-            return list.stream()
-                    .map(extract)
-                    .map(PokedexCommand::capitalize)
-                    .collect(Collectors.joining(" / "));
-        }
+    @Override
+    protected Mono<Tuple2<Pokemon, PokemonSpecies>> doAsyncOperations(String parameters) {
+        return client.getResource(Pokemon.class, parameters)
+                .zipWhen(pkmn -> client.followResource(pkmn::getSpecies, PokemonSpecies.class));
     }
 
-    private static String formatAbilities(List<PokemonAbility> abilities) {
-        // create a list of all regular and hidden abilities, removing any hidden abilities identical to normal ones.
-        var regularandHidden = abilities.stream()
-                .collect(Collectors.partitioningBy(PokemonAbility::getIsHidden,
-                        Collectors.mapping(a -> capitalize(a.getAbility().getName()), Collectors.toList())));
-        var normalizedList = new ArrayList<>(regularandHidden.get(false));
-        regularandHidden.get(true)
-                .forEach(a -> {
-                    if (!normalizedList.contains(a)) {
-                        normalizedList.add("*" + a + "*");
-                    }
-                });
-        return formatMulti(normalizedList, Function.identity());
+    @Override
+    protected InteractionReplyEditSpec formatResponse(Tuple2<Pokemon, PokemonSpecies> response) {
+        return InteractionReplyEditSpec.builder()
+                .addEmbed(embedMapper.createEmbedForPokemon(response.getT1(), response.getT2()))
+                .build();
     }
 
-    private static String formatDecaUnits(int deca, Unit unit) {
-        return String.format("%2.1f %s (%s)", deca / 10.0, unit.symbol, unit.toImperial(deca));
+    @Override
+    protected String formatErrorResponse(Throwable err) {
+        return "Error finding that Pokemon. Are you sure you spelled it right?";
     }
 
-    private static List<EmbedCreateFields.Field> makeStatFields(Pokemon pkmn) {
-        return pkmn.getStats().stream()
-                .map(ps -> {
-                    return EmbedCreateFields.Field.of(
-                            capitalize(ps.getStat().getName()),
-                            String.valueOf(ps.getBaseStat()),
-                            false);
-                })
-                .collect(Collectors.toList());
-    }
-
-    private static String capitalize(String in) {
-        return Arrays.stream(in.split("-"))
-                .map(WordUtils::capitalize)
-                .collect(Collectors.joining(" "));
-    }
-
-    private static String getFlavorText(PokemonSpecies species) {
-        var pool = species.getFlavorTextEntries()
-                .stream()
-                .filter(ft -> "en".equals(ft.getLanguage().getName()))
-                .toList();
-
-        return pool.get(pool.size() - 1).getFlavorText();
-    }
-
-    private static Color extractColor(String name) {
-        return switch (name) {
-            case "black" -> Color.BLACK;
-            case "blue" -> Color.BLUE;
-            case "brown" -> Color.BROWN;
-            case "gray" -> Color.GRAY;
-            case "green" -> Color.GREEN;
-            case "pink" -> Color.PINK;
-            case "purple" -> Color.DEEP_LILAC;
-            case "red" -> Color.RED;
-            case "white" -> Color.WHITE;
-            case "yellow" -> Color.YELLOW;
-            default -> Color.ORANGE;
-        };
-    }
-
-    @RequiredArgsConstructor
-    private enum Unit {
-        METERS("m", i -> {
-            var inches = i * 4; // True factor is 3.937
-            return String.format("%d' %d\"", inches / 12, inches % 12);
-        }),
-        KILOGRAMS("kg", i -> {
-            var pounds = i * 0.2204; // True pounds, rather than going through some other unit. More accurate
-            return String.format("%2.1f lbs", pounds);
-        })
-        ;
-        private final String symbol;
-        private final IntFunction<String> converted;
-
-        public String toImperial(int deca) {
-            return this.converted.apply(deca);
-        }
-    }
+    //    @Override
+//    public Mono<Void> handle(ChatInputInteractionEvent event) {
+//        var name = event.getOption("name")
+//                .flatMap(ApplicationCommandInteractionOption::getValue)
+//                .map(ApplicationCommandInteractionOptionValue::asString);
+//        var share = event.getOption(SHARE_PARAMETER)
+//                .flatMap(ApplicationCommandInteractionOption::getValue)
+//                .map(ApplicationCommandInteractionOptionValue::asBoolean)
+//                .orElse(false);
+//
+//        if (name.isEmpty()) {
+//            return event.reply()
+//                    .withEphemeral(true)
+//                    .withContent("Need a Pokemon's name or ID number!");
+//        }
+//
+//        return event.deferReply().withEphemeral(!share)
+//                .then(client.getResource(Pokemon.class, name.get()))
+//                .zipWhen(pkmn -> client.followResource(pkmn::getSpecies, PokemonSpecies.class))
+//                .flatMap(tuple -> {
+//                    var pkmn = tuple.getT1();
+//                    var species = tuple.getT2();
+//                    return event.editReply(InteractionReplyEditSpec.builder()
+//                            .addEmbed(embedMapper.createEmbedForPokemon(pkmn, species)).build());
+//                })
+//                .onErrorResume(t -> event.editReply("Error finding that Pokemon. Are you sure you spelled it right?"))
+//                .then();
+//    }
 }

@@ -4,7 +4,6 @@ import com.github.milomarten.taisharangers.discord.commands.SupportsAutocomplete
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import skaro.pokeapi.client.PokeApiClient;
@@ -16,7 +15,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.github.milomarten.taisharangers.models.PokemonSearchParamsMapper.TYPE_PARAMETER;
+import static com.github.milomarten.taisharangers.discord.mapper.PokemonSearchParamsMapper.TYPE_PARAMETER;
 
 //@Service
 @RequiredArgsConstructor

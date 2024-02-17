@@ -1,12 +1,11 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
 import com.github.milomarten.taisharangers.discord.StandardParams;
-import com.github.milomarten.taisharangers.models.PokemonSearchParamsMapper;
+import com.github.milomarten.taisharangers.discord.mapper.PokemonSearchParamsMapper;
+import com.github.milomarten.taisharangers.models.PokemonSearchParams;
 import com.github.milomarten.taisharangers.services.PokemonQueryService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.spec.InteractionReplyEditSpec;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.WordUtils;
@@ -24,7 +23,7 @@ import static com.github.milomarten.taisharangers.discord.StandardParams.SHARE_P
 
 @Component
 @RequiredArgsConstructor
-public class SearchCommand implements Command {
+public class SearchCommand extends AsyncResponseCommand<PokemonSearchParams, List<PokemonQueryService.QLResult>> {
     private final PokemonQueryService service;
 
     private final PokemonSearchParamsMapper mapper;
@@ -41,28 +40,28 @@ public class SearchCommand implements Command {
         return ApplicationCommandRequest.builder()
                 .name(getName())
                 .description("Search for Pokemon matching the given criteria")
-                .addAllOptions(mapper.makeCommandOptionsForSearching())
+                .addAllOptions(StandardParams.makeCommandOptionsForSearching())
                 .addOption(StandardParams.shareParameter())
                 .build();
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
-        var params = mapper.fromChatInputInteractionEvent(event);
-
-        var share = event.getOption(SHARE_PARAMETER)
-                .flatMap(a -> a.getValue())
-                .map(a -> a.asBoolean())
-                .orElse(false);
-
-        return event.deferReply()
-                .withEphemeral(!share)
-                .then(service.searchPokemon(params))
-                .flatMap(results -> event.editReply(formatResults(results)))
-                .then();
+    protected boolean isEphemeral(ChatInputInteractionEvent event) {
+        return !StandardParams.isShare(event);
     }
 
-    private InteractionReplyEditSpec formatResults(List<PokemonQueryService.QLResult> results) {
+    @Override
+    protected Try<PokemonSearchParams> parseParameters(ChatInputInteractionEvent event) {
+        return Try.success(mapper.fromChatInputInteractionEvent(event));
+    }
+
+    @Override
+    protected Mono<List<PokemonQueryService.QLResult>> doAsyncOperations(PokemonSearchParams parameters) {
+        return service.searchPokemon(parameters);
+    }
+
+    @Override
+    protected InteractionReplyEditSpec formatResponse(List<PokemonQueryService.QLResult> results) {
         var spec = InteractionReplyEditSpec.builder();
         if (results.size() > PAGE_SIZE) {
             spec.contentOrNull(String.format("%d Pokemon found. Since there are so many, results are attached in a file.", results.size()));
