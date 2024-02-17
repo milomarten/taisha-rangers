@@ -23,7 +23,7 @@ public class PokemonSearchParamsMapper {
         opts.add(ApplicationCommandOptionData.builder()
                         .name(TYPE_PARAMETER)
                         .description("A type that the Pokemon has to be")
-        //                        .autocomplete(true)
+//                        .autocomplete(true)
                         .type(ApplicationCommandOption.Type.STRING.getValue())
                         .required(false)
                         .build());

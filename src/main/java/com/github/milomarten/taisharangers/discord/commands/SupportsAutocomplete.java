@@ -3,5 +3,12 @@ package com.github.milomarten.taisharangers.discord.commands;
 import java.util.List;
 
 public interface SupportsAutocomplete {
-    List<String> getCandidates(String paramName);
+    boolean supportsCommand(String commandName);
+    List<Choice> getCandidates(String paramName);
+
+    public record Choice(String id, String display) {
+        public static Choice fromString(String display) {
+            return new Choice(display, display);
+        }
+    }
 }

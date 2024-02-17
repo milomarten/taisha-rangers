@@ -1,5 +1,6 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
+import com.github.milomarten.taisharangers.discord.StandardParams;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -29,6 +30,8 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
+import static com.github.milomarten.taisharangers.discord.StandardParams.SHARE_PARAMETER;
+
 @Component
 @RequiredArgsConstructor
 public class PokedexCommand implements Command {
@@ -51,13 +54,7 @@ public class PokedexCommand implements Command {
                         .description("The Pokemon's name or Dex Number")
                         .build()
                 )
-                .addOption(ApplicationCommandOptionData.builder()
-                        .name("share")
-                        .required(false)
-                        .type(ApplicationCommandOption.Type.BOOLEAN.getValue())
-                        .description("If true, output is visible to all. By default, will only be seen by you.")
-                        .build()
-                )
+                .addOption(StandardParams.shareParameter())
                 .build();
     }
 
@@ -66,7 +63,7 @@ public class PokedexCommand implements Command {
         var name = event.getOption("name")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
-        var share = event.getOption("share")
+        var share = event.getOption(SHARE_PARAMETER)
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asBoolean)
                 .orElse(false);

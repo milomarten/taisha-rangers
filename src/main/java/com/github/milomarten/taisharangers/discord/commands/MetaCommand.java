@@ -126,10 +126,16 @@ public class MetaCommand implements Command, SupportsAutocomplete {
     }
 
     @Override
-    public List<String> getCandidates(String paramName) {
+    public boolean supportsCommand(String commandName) {
+        return commandName.equals(getName());
+    }
+
+    @Override
+    public List<Choice> getCandidates(String paramName) {
         return commandPool.getCommands()
                 .stream()
                 .map(Command::getName)
+                .map(Choice::fromString)
                 .toList();
     }
 }

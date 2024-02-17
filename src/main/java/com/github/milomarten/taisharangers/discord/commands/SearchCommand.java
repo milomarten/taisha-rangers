@@ -1,5 +1,6 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
+import com.github.milomarten.taisharangers.discord.StandardParams;
 import com.github.milomarten.taisharangers.models.PokemonSearchParamsMapper;
 import com.github.milomarten.taisharangers.services.PokemonQueryService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -19,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.github.milomarten.taisharangers.discord.StandardParams.SHARE_PARAMETER;
+
 @Component
 @RequiredArgsConstructor
 public class SearchCommand implements Command {
@@ -27,8 +30,6 @@ public class SearchCommand implements Command {
     private final PokemonSearchParamsMapper mapper;
 
     private static final int PAGE_SIZE = 10;
-
-    public static final String SHARE_PARAMETER = "share";
 
     @Override
     public String getName() {
@@ -41,12 +42,7 @@ public class SearchCommand implements Command {
                 .name(getName())
                 .description("Search for Pokemon matching the given criteria")
                 .addAllOptions(mapper.makeCommandOptionsForSearching())
-                .addOption(ApplicationCommandOptionData.builder()
-                        .name(SHARE_PARAMETER)
-                        .description("If true, output is visible to all. By default, will only be seen by you.")
-                        .type(ApplicationCommandOption.Type.BOOLEAN.getValue())
-                        .required(false)
-                        .build())
+                .addOption(StandardParams.shareParameter())
                 .build();
     }
 
