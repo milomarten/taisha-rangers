@@ -13,6 +13,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * The pool of registered Commands in the system.
+ */
 @RequiredArgsConstructor
 @Component
 public class CommandPool {
@@ -26,6 +29,11 @@ public class CommandPool {
                 .collect(Collectors.toMap(Command::getName, Function.identity()));
     }
 
+    /**
+     * Get a command, if it exists, by its name
+     * @param name The command's name
+     * @return The command, or empty if no match
+     */
     public Optional<Command> getCommandByName(String name) {
         return Optional.ofNullable(commandsByName.get(name));
     }

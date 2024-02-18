@@ -1,7 +1,6 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
 import com.github.milomarten.taisharangers.discord.StandardParams;
-import com.github.milomarten.taisharangers.discord.mapper.PokemonSearchParamsMapper;
 import com.github.milomarten.taisharangers.models.PokemonSearchParams;
 import com.github.milomarten.taisharangers.services.PokemonQueryService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -19,14 +18,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.github.milomarten.taisharangers.discord.StandardParams.SHARE_PARAMETER;
-
 @Component
 @RequiredArgsConstructor
 public class SearchCommand extends AsyncResponseCommand<PokemonSearchParams, List<PokemonQueryService.QLResult>> {
     private final PokemonQueryService service;
-
-    private final PokemonSearchParamsMapper mapper;
 
     private static final int PAGE_SIZE = 10;
 
@@ -40,7 +35,7 @@ public class SearchCommand extends AsyncResponseCommand<PokemonSearchParams, Lis
         return ApplicationCommandRequest.builder()
                 .name(getName())
                 .description("Search for Pokemon matching the given criteria")
-                .addAllOptions(StandardParams.makeCommandOptionsForSearching())
+                .addAllOptions(StandardParams.pokemonSearchParameters())
                 .addOption(StandardParams.shareParameter())
                 .build();
     }
@@ -52,7 +47,7 @@ public class SearchCommand extends AsyncResponseCommand<PokemonSearchParams, Lis
 
     @Override
     protected Try<PokemonSearchParams> parseParameters(ChatInputInteractionEvent event) {
-        return Try.success(mapper.fromChatInputInteractionEvent(event));
+        return Try.success(StandardParams.getSearchParams(event));
     }
 
     @Override

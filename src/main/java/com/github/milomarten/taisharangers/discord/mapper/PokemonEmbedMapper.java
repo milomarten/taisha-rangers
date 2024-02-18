@@ -1,6 +1,5 @@
 package com.github.milomarten.taisharangers.discord.mapper;
 
-import com.github.milomarten.taisharangers.discord.commands.PokedexCommand;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -22,8 +21,17 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
+/**
+ * Mapper which generates a standard Discord embed for a Pokemon.
+ */
 @Service
 public class PokemonEmbedMapper {
+    /**
+     * Create an Embed for the provided Pokemon species
+     * @param pkmn The Pokemon object from PokeAPI
+     * @param species The Species object from PokeAPI
+     * @return The EmbedSpec to be put in bot responses.
+     */
     public EmbedCreateSpec createEmbedForPokemon(Pokemon pkmn, PokemonSpecies species) {
         return EmbedCreateSpec.builder()
                 .title(String.format("#%03d %s", pkmn.getId(), getName(species)))
@@ -41,6 +49,11 @@ public class PokemonEmbedMapper {
                 .build();
     }
 
+    /**
+     * Get the (English) name of the Pokemon Species provided.
+     * @param species The species object from PokeAPI
+     * @return The name.
+     */
     public static String getName(PokemonSpecies species) {
         return species.getNames()
                 .stream()

@@ -3,7 +3,6 @@ package com.github.milomarten.taisharangers.discord.commands;
 import com.github.milomarten.taisharangers.discord.StandardParams;
 import com.github.milomarten.taisharangers.discord.mapper.PokemonEmbedMapper;
 import com.github.milomarten.taisharangers.models.PokemonSearchParams;
-import com.github.milomarten.taisharangers.discord.mapper.PokemonSearchParamsMapper;
 import com.github.milomarten.taisharangers.services.RandomPokemonService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -27,8 +26,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Pokemon, PokemonSpecies>>> {
-    private final PokemonSearchParamsMapper mapper;
-
     private final RandomPokemonService randomPokemonService;
 
     private final PokeApiClient client;
@@ -53,7 +50,7 @@ public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Poke
                         .name("pokemon")
                         .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
                         .description("For selecting random Pokemon")
-                        .addAllOptions(StandardParams.makeCommandOptionsForSearching())
+                        .addAllOptions(StandardParams.pokemonSearchParameters())
                         .addOption(StandardParams.shareParameter())
                         .addOption(ApplicationCommandOptionData.builder()
                                 .name(COUNT_PARAM)
@@ -88,7 +85,7 @@ public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Poke
         } else if (count > MAX_REQUEST) {
             return Try.failure("Count must be 20 or less.");
         }
-        var query = mapper.fromSubGroup(options);
+        var query = StandardParams.getSearchParams(options);
 
         return Try.success(new Params((int) count, query));
     }

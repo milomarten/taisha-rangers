@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * The component which handles the interface between Discord and the various code handlers.
+ */
 @Component
 @ConditionalOnBean(GatewayDiscordClient.class)
 @RequiredArgsConstructor
@@ -86,26 +89,5 @@ public class CommandHandler implements ApplicationRunner {
         })
         .onErrorContinue((t, o) -> log.error("Error in Autocomplete handler", t))
         .subscribe();
-    }
-
-    private void setupCommand() {
-        var appId = gateway.getRestClient().getApplicationId().block();
-
-        var request = ApplicationCommandRequest.builder()
-                .name("pokedex")
-                .description("Look up any Pokemon in the Pokedex, powered by PokeAPI")
-                .addOption(ApplicationCommandOptionData.builder()
-                        .name("name")
-                        .required(true)
-                        .type(ApplicationCommandOption.Type.STRING.getValue())
-                        .description("The Pokemon's name or Dex Number")
-                        .build()
-                )
-                .build();
-
-        gateway.getRestClient()
-                .getApplicationService()
-                .createGuildApplicationCommand(appId, 902681369405173840L, request)
-                .block();
     }
 }
