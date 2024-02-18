@@ -7,9 +7,11 @@ import lombok.Getter;
 import java.awt.image.BufferedImage;
 import java.util.OptionalInt;
 
+/**
+ * A WriteableImageSource which wraps a BufferedImage.
+ */
 @AllArgsConstructor
-public
-class BufferedImageSource implements WriteableImageSource {
+public class BufferedImageSource implements WriteableImageSource {
     @Getter private final BufferedImage wrapped;
 
     @Override

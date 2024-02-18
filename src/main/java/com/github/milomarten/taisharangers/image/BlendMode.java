@@ -1,8 +1,11 @@
 package com.github.milomarten.taisharangers.image;
 
+/**
+ * A variety of standard blending algorithms.
+ */
 public enum BlendMode implements BlendAlgorithm {
     /**
-     * Standard blending, which composites the top layer over the bottom using standard rules.
+     * Standard blending, which composites the top layer over the bottom using standard transparency rules.
      */
     NORMAL {
         @Override
@@ -12,6 +15,12 @@ public enum BlendMode implements BlendAlgorithm {
     }
     ;
 
+    /**
+     * A generic 'default' algorithm which mixes semitransparent colors as a weighted average.
+     * @param top The upper color
+     * @param bottom The lower color
+     * @return The mixed color
+     */
     protected static Color alphaComposite(Color top, Color bottom) {
         double bottomAlpha = bottom.alpha01();
         double topAlpha = top.alpha01();

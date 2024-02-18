@@ -5,8 +5,17 @@ import lombok.experimental.UtilityClass;
 
 import java.util.List;
 
+/**
+ * Utility classes to handle some common GraphQL operation functionality
+ */
 @UtilityClass
 public class GraphQLOperationUtils {
+    /**
+     * Chooses between an Equals or an In query, depending on the number of objects in a list.
+     * @param l The list to handle
+     * @return An operation to efficiently check that a GraphQL attribute is one value in this list
+     * @param <T> The type contained in the list.
+     */
     public <T> Operation<T> equalsOrIn(List<T> l) {
         if (l.size() == 1) {
             return new Equals<>(l.get(0));
@@ -15,6 +24,20 @@ public class GraphQLOperationUtils {
         }
     }
 
+    /**
+     * Handles a Range query, based on the nullity of the upper and lower bounds.
+     * All bounds are inclusive. Truth table:
+     * Both bounds null -> return null
+     * Lower bound null, upper bound non-null -> return LessThenOrEqual
+     * Lower bound non-null, upper bound null -> return GreaterThanOrEqual
+     * Lower and upper bounds equal -> return Equal
+     * Lower bound greater than upper bound -> return Inclusive Range with arguments inverted
+     * Lower bound less than upper bound -> return Inclusive Range
+     * @param lowerInclusive The lower bound, inclusive.
+     * @param upperInclusive The upper bound, exclusive.
+     * @return An operation tailed to the provided bounds
+     * @param <T> The type being queried.
+     */
     public <T extends Comparable<T>> Operation<T> range(T lowerInclusive, T upperInclusive) {
         if (lowerInclusive == null && upperInclusive == null) {
             return null;

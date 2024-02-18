@@ -5,6 +5,9 @@ import com.github.milomarten.taisharangers.image.Point;
 
 import java.util.OptionalInt;
 
+/**
+ * An ImageSource that represents one linear gradient
+ */
 public class GradientSource implements ImageSource {
     private final Point start;
     private final Point end;
@@ -13,6 +16,20 @@ public class GradientSource implements ImageSource {
 
     private final long[] coefficients;
 
+    /**
+     * Create the linear gradient.
+     * The linear gradient will travel the line delineated by the start and end point, gradually shifting from
+     * the start to the end color. Points behind the start point and end point will be solidly the start and end color,
+     * respectively.
+     * The algorithm I scraped from the internet seems to not care how the points are oriented with respect
+     * to each other, although an exception will be thrown at creation time if the same start and end point is used.
+     * The color interpolation used is smarter than a standard lerp, and seems to produce reasonably nice colors, even
+     * when making a gradient between two opposite colors.
+     * @param start The starting point of the gradient
+     * @param end The ending point of the gradient
+     * @param startColor The starting color of the gradient
+     * @param endColor The ending color of the gradient.
+     */
     public GradientSource(Point start, Point end, Color startColor, Color endColor) {
         if (start.equals(end)) {
             throw new IllegalArgumentException("You suck");

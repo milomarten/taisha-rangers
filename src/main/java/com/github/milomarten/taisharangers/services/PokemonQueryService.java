@@ -23,6 +23,13 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * Service to query PokeAPI's GraphQL database, based on certain criteria.
+ * A lot of this is a little janky, since PokeAPI does not expose their Schema, and I can't
+ * find a tool that converts what I do have into POJOs. In the future, I'd want something more robust, particularly
+ * with which fields are returned back. As of right now, the expectation is to use the regular
+ * API to get fuller details about a Pokemon that was found this way.
+ */
 @Service
 public class PokemonQueryService {
     private final HttpGraphQlClient graphQlClient;
@@ -40,7 +47,7 @@ public class PokemonQueryService {
      * If the call failed due to system error, the error is only cached for 5 minutes, to allow the backend time
      * to heal.
      * @param params The search params
-     * @return The found Pokemon IDs matching the query
+     * @return The found Pokemon IDs and names matching the query
      */
     @Cacheable("pokemon-queries")
     public Mono<List<QLResult>> searchPokemon(PokemonSearchParams params) {

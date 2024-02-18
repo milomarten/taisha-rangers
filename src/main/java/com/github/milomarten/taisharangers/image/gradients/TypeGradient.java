@@ -4,6 +4,10 @@ import com.github.milomarten.taisharangers.image.Color;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Color table based on Pokemon types.
+ * Only handles the normal 18 types. PokeAPI supports Unknown and Shadow types, but no Pokemon have them.
+ */
 @RequiredArgsConstructor
 @Getter
 public enum TypeGradient {

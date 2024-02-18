@@ -9,6 +9,11 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+/**
+ * Factory which generates a token's frame (border)
+ * Note that the frame is loaded from frame.png in the resources folder at runtime. Changing it will require
+ * the app to be restarted.
+ */
 @Service
 public class FrameGeneratorService {
     private BufferedImage frameTemplate;
@@ -19,6 +24,10 @@ public class FrameGeneratorService {
         frameTemplate = ImageIO.read(stream);
     }
 
+    /**
+     * Create a frame for a token.
+     * @return The frame, wrapped in a BufferedImageSource for composition
+     */
     public BufferedImageSource createFrame() {
         var copy = new BufferedImage(frameTemplate.getWidth(), frameTemplate.getHeight(), frameTemplate.getType());
         frameTemplate.copyData(copy.getRaster());

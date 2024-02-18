@@ -24,7 +24,7 @@ public class DiscordCommandService {
         this.applicationId = gateway.getRestClient().getApplicationId().blockOptional()
                 .orElseThrow(() -> new IllegalStateException("Couldn't get Application ID"));
 
-//        initializeCommand("commands").subscribe();
+        initializeCommand("commands").subscribe();
     }
 
     public Mono<Boolean> initializeCommand(String id) {

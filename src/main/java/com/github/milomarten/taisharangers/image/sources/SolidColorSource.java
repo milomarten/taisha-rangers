@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.OptionalInt;
 
+/**
+ * An ImageSource that is just one color, extending infinitely
+ */
 @RequiredArgsConstructor
 public
 class SolidColorSource implements ImageSource {

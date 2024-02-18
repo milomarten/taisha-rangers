@@ -11,9 +11,22 @@ import java.awt.image.IndexColorModel;
 import java.io.IOException;
 import java.net.URL;
 
+/**
+ * A service to generate a sprite image for a Pokemon.
+ */
 @Service
 public class ImageRetrieveService {
 
+    /**
+     * Get the sprite for this Pokemon.
+     * Note that this call does block, since it uses ImageIO.read. Perhaps in the future, I will wrap this in a
+     * Mono to make this network call more clear.
+     * @param pkmn The Pokemon to retrieve
+     * @param gender The gender of the Pokemon
+     * @param shiny Whether this Pokemon should be shown as shiny
+     * @return The image, wrapped in a BufferedImageSource for composition
+     * @throws IOException If the retrieval fails for some reason
+     */
     public BufferedImageSource getSprite(Pokemon pkmn, Gender gender, boolean shiny) throws IOException {
         String url = gender.getSprite(pkmn.getSprites(), shiny);
         BufferedImage source = ImageIO.read(new URL(url));
