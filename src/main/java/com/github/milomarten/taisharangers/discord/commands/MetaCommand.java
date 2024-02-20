@@ -3,7 +3,10 @@ package com.github.milomarten.taisharangers.discord.commands;
 import com.github.milomarten.taisharangers.discord.CommandPool;
 import com.github.milomarten.taisharangers.discord.DiscordCommandService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +18,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class MetaCommand implements Command, SupportsAutocomplete {
+public class MetaCommand extends AsyncResponseCommand<Parameters, Response> implements SupportsAutocomplete {
     public static final String INIT_COMMAND = "init";
     public static final String UPDATE_COMMAND = "update";
     public static final String DELETE_COMMAND = "delete";
@@ -71,58 +74,56 @@ public class MetaCommand implements Command, SupportsAutocomplete {
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    protected boolean isEphemeral(ChatInputInteractionEvent event) {
+        return true;
+    }
+
+    @Override
+    protected Try<Parameters> parseParameters(ChatInputInteractionEvent event) {
         var options = event.getOptions();
         if (options.isEmpty()) {
-            return event.reply("Need root parameter?").withEphemeral(true);
+            return Try.failure("Need root parameter??");
         }
-        var op = options.get(0).getName();
-        var idMaybe = options.get(0).getOption("id")
-                .flatMap(a -> a.getValue())
-                .map(a -> a.asString());
+        var op = options.get(0);
+        var idMaybe = op.getOption("id")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString);
         if (idMaybe.isEmpty()) {
-            return event.reply("Need id parameter?").withEphemeral(true);
+            return Try.failure("Need ID");
         }
-
-        var id = idMaybe.get();
-        return switch (op) {
-            case INIT_COMMAND -> makeReply(callBackend(
-                    discordCommandService.initializeCommand(id),
-                    "Command `" + id + "` was created!",
-                    "Command `" + id + "` was not able to be created. Is the name correct?",
-                    "Encountered an error while creating. Check the logs."
-            ), event);
-            case UPDATE_COMMAND -> makeReply(callBackend(
-                    discordCommandService.updateCommand(id),
-                    "Command `" + id + "` was updated!",
-                    "Command `" + id + "` was not able to be updated. Is the name correct?",
-                    "Encountered an error while updating. Check the logs."
-            ), event);
-            case DELETE_COMMAND -> makeReply(callBackend(
-                    discordCommandService.deleteCommand(id),
-                    "Command `" + id + "` was deleted!",
-                    "Command `" + id + "` was not able to be delted. Is the name correct?",
-                    "Encountered an error while deleting. Check the logs."
-            ), event);
-            default -> event.reply(String.format("Unexpected subcommand. Expected one of: %s, %s, or %s", INIT_COMMAND, UPDATE_COMMAND, DELETE_COMMAND))
-                    .withEphemeral(true);
+        var opMaybe = switch (op.getName()) {
+            case INIT_COMMAND -> MetaType.INITIALIZE;
+            case UPDATE_COMMAND -> MetaType.UPDATE;
+            case DELETE_COMMAND -> MetaType.DELETE;
+            default -> null;
         };
+        if (opMaybe == null) {
+            return Try.failure("Need correct subcommand");
+        }
+        return Try.success(new Parameters(opMaybe, idMaybe.get()));
     }
 
-    private Mono<String> callBackend(Mono<Boolean> result, String success, String neutral, String error) {
-        return result.map(b -> b ? success : neutral)
-                .onErrorResume(t -> {
-                    log.error("Encountered error while adjusting command", t);
-                    return Mono.just(error);
-                });
+    @Override
+    protected Mono<Response> doAsyncOperations(Parameters parameters) {
+        var cmd = switch (parameters.type()) {
+            case INITIALIZE -> discordCommandService.initializeCommand(parameters.id());
+            case UPDATE -> discordCommandService.updateCommand(parameters.id());
+            case DELETE -> discordCommandService.deleteCommand(parameters.id());
+        };
+        return cmd.map(success -> new Response(parameters.type(), parameters.id(), success));
     }
 
-    private Mono<Void> makeReply(Mono<String> reply, ChatInputInteractionEvent event) {
-        return event.deferReply()
-                .withEphemeral(true)
-                .then(reply)
-                .flatMap(event::editReply)
-                .then();
+    @Override
+    protected InteractionReplyEditSpec formatResponse(Response response) {
+        var verb = switch (response.type()) {
+            case INITIALIZE -> "created";
+            case UPDATE -> "updated";
+            case DELETE -> "deleted";
+        };
+        var string = response.success() ?
+                String.format("Command `%s` was successfully %s!", response.id(), verb) :
+                String.format("Command `%s` wasn't %s. Is the name correct?", response.id(), verb);
+        return InteractionReplyEditSpec.builder().contentOrNull(string).build();
     }
 
     @Override
@@ -139,3 +140,12 @@ public class MetaCommand implements Command, SupportsAutocomplete {
                 .toList();
     }
 }
+enum MetaType {
+    INITIALIZE,
+    UPDATE,
+    DELETE
+}
+
+record Parameters(MetaType type, String id) {}
+
+record Response(MetaType type, String id, boolean success) {}
