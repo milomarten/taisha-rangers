@@ -22,6 +22,8 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
     public static final String INIT_COMMAND = "init";
     public static final String UPDATE_COMMAND = "update";
     public static final String DELETE_COMMAND = "delete";
+    public static final String PATCH_COMMAND = "patch";
+
     private final DiscordCommandService discordCommandService;
 
     private final CommandPool commandPool;
@@ -60,6 +62,11 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
                         .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
                         .addOption(createIdOption(false))
                         .build())
+                .addOption(ApplicationCommandOptionData.builder()
+                        .name(PATCH_COMMAND)
+                        .description("Update every command in Discord")
+                        .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
+                        .build())
                 .build();
     }
 
@@ -85,22 +92,25 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
             return Try.failure("Need root parameter??");
         }
         var op = options.get(0);
-        var idMaybe = op.getOption("id")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        if (idMaybe.isEmpty()) {
-            return Try.failure("Need ID");
-        }
+
         var opMaybe = switch (op.getName()) {
             case INIT_COMMAND -> MetaType.INITIALIZE;
             case UPDATE_COMMAND -> MetaType.UPDATE;
             case DELETE_COMMAND -> MetaType.DELETE;
+            case PATCH_COMMAND -> MetaType.PATCH;
             default -> null;
         };
         if (opMaybe == null) {
             return Try.failure("Need correct subcommand");
         }
-        return Try.success(new Parameters(opMaybe, idMaybe.get()));
+
+        var idMaybe = op.getOption("id")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString);
+        if (idMaybe.isEmpty() && opMaybe != MetaType.PATCH) {
+            return Try.failure("Need ID");
+        }
+        return Try.success(new Parameters(opMaybe, idMaybe.orElse(null)));
     }
 
     @Override
@@ -109,6 +119,7 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
             case INITIALIZE -> discordCommandService.initializeCommand(parameters.id());
             case UPDATE -> discordCommandService.updateCommand(parameters.id());
             case DELETE -> discordCommandService.deleteCommand(parameters.id());
+            case PATCH -> discordCommandService.patch().thenReturn(true);
         };
         return cmd.map(success -> new Response(parameters.type(), parameters.id(), success));
     }
@@ -119,6 +130,7 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
             case INITIALIZE -> "created";
             case UPDATE -> "updated";
             case DELETE -> "deleted";
+            case PATCH -> "patched";
         };
         var string = response.success() ?
                 String.format("Command `%s` was successfully %s!", response.id(), verb) :
@@ -143,7 +155,8 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
 enum MetaType {
     INITIALIZE,
     UPDATE,
-    DELETE
+    DELETE,
+    PATCH
 }
 
 record Parameters(MetaType type, String id) {}

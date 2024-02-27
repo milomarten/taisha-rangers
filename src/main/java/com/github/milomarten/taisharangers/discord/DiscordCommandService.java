@@ -1,5 +1,6 @@
 package com.github.milomarten.taisharangers.discord;
 
+import com.github.milomarten.taisharangers.discord.commands.Command;
 import discord4j.core.GatewayDiscordClient;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class DiscordCommandService {
         this.applicationId = gateway.getRestClient().getApplicationId().blockOptional()
                 .orElseThrow(() -> new IllegalStateException("Couldn't get Application ID"));
 
-//        initializeCommand("commands").subscribe();
+        updateCommand("commands").subscribe();
     }
 
     /**
@@ -56,10 +57,16 @@ public class DiscordCommandService {
      */
     public Mono<Boolean> updateCommand(String id) {
         var cmd = commands.getCommandByName(id);
-        return cmd.map(command -> gateway.getRestClient().getApplicationService()
-                    .bulkOverwriteGuildApplicationCommand(this.applicationId, GUILD_ID, List.of(command.getDiscordSpec()))
-                    .then(Mono.just(true)))
-                .orElseGet(() -> Mono.just(false));
+        if (cmd.isEmpty()) {
+            return Mono.just(false);
+        }
+        var service = gateway.getRestClient().getApplicationService();
+        return service
+                .getGuildApplicationCommands(this.applicationId, GUILD_ID)
+                .filter(acd -> acd.name().equals(id))
+                .next()
+                .flatMap(acd -> service.modifyGuildApplicationCommand(this.applicationId,GUILD_ID, acd.id().asLong(), cmd.get().getDiscordSpec()))
+                .then(Mono.just(true));
     }
 
     /**
@@ -75,5 +82,19 @@ public class DiscordCommandService {
                 .next()
                 .flatMap(acd -> service.deleteGuildApplicationCommand(this.applicationId, GUILD_ID, acd.id().asLong()).thenReturn(true))
                 .switchIfEmpty(Mono.just(false));
+    }
+
+    /**
+     * The ultimate command. Clears out all commands in Discord and rebuilds them all
+     * @return An empty Mono if it worked. Discord errors are propagated.
+     */
+    public Mono<Void> patch() {
+        var all = commands.getCommands()
+                .stream()
+                .map(Command::getDiscordSpec)
+                .toList();
+        return gateway.getRestClient().getApplicationService()
+                .bulkOverwriteGuildApplicationCommand(this.applicationId, GUILD_ID, all)
+                .then();
     }
 }

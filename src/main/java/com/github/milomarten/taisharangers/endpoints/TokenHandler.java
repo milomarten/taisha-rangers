@@ -11,6 +11,7 @@ import com.github.milomarten.taisharangers.models.Gender;
 import com.github.milomarten.taisharangers.services.ColorGeneratorService;
 import com.github.milomarten.taisharangers.services.FrameGeneratorService;
 import com.github.milomarten.taisharangers.services.ImageRetrieveService;
+import com.github.milomarten.taisharangers.services.TokenGeneratorService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.EnumUtils;
 import org.springframework.http.MediaType;
@@ -30,23 +31,13 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class TokenHandler implements HandlerFunction<ServerResponse> {
-    private static final Point GRADIENT_START_POINT = new Point(35, 105);
-    private static final Point GRADIENT_END_POINT = new Point(105, 35);
-    private static final int TOKEN_WIDTH = 140;
-    private static final int TOKEN_HEIGHT = 140;
-    private static final double GRADIENT_OPACITY = 0.75;
-    private static final Point SPRITE_OFFSET = new Point((TOKEN_WIDTH - 96) / 2, (TOKEN_HEIGHT - 96) / 2);
     private static final String RANDOM_ID = "RANDOM";
-
-    private final ImageRetrieveService imageRetrieveService;
 
     private final PokeApiClient client;
 
-    private final FrameGeneratorService frameGeneratorService;
-
-    private final ColorGeneratorService colorGeneratorService;
-
     private final PokemonHandler pokemonHandler;
+
+    private final TokenGeneratorService tokenGeneratorService;
 
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
@@ -64,42 +55,29 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                 .map(s -> EnumUtils.getEnumIgnoreCase(TypeGradient.class, s))
                 .map(TypeGradient::getDarker);
 
+        var customization = TokenGeneratorService.CustomizationOptions.builder()
+                .gender(gender)
+                .shiny(shiny)
+                .firstColor(firstOverride.orElse(null))
+                .secondColor(secondOverride.orElse(null))
+                .build();
+
         return (RANDOM_ID.equalsIgnoreCase(id) ?
                 pokemonHandler.handleNoResponse(request) :
                 client.getResource(Pokemon.class, id))
                 .flatMap(pkmn -> {
-                    try {
-                        var image = new LayeredImage(TOKEN_WIDTH, TOKEN_HEIGHT);
-                        var frame = frameGeneratorService.createFrame();
-                        image.addLayer(frame);
-                        image.addLayer(Layer.builder()
-                                .image(new GradientSource(
-                                    GRADIENT_START_POINT,
-                                    GRADIENT_END_POINT,
-                                    firstOverride.orElseGet(() -> colorGeneratorService.getPrimaryForType(pkmn)),
-                                    secondOverride.orElseGet(() -> colorGeneratorService.getSecondaryForType(pkmn))
-                                ))
-                                .opacity(GRADIENT_OPACITY)
-                                .mask(new MaskFromImage(frame))
-                                .build());
-                        image.addLayer(Layer.builder()
-                                .image(imageRetrieveService.getSprite(pkmn, gender, shiny))
-                                .offset(SPRITE_OFFSET)
-                                .build()
-                        );
-                        return Mono.just(image.toImage());
-                    } catch (RuntimeException | IOException e) {
-                        e.printStackTrace();
-                        return Mono.error(e);
+                    var token = tokenGeneratorService.generateToken(pkmn, customization);
+                    if (token == null) {
+                        return Mono.error(() -> new IOException("Error retrieving token"));
+                    } else {
+                        return Mono.just(token);
                     }
                 })
-                .flatMap(bi -> {
-                    ByteArrayOutputStream os = new ByteArrayOutputStream();
+                .flatMap(token -> {
                     try {
-                        ImageIO.write(bi, "png", os);
                         return ServerResponse.ok()
                                 .contentType(MediaType.IMAGE_PNG)
-                                .bodyValue(os.toByteArray());
+                                .bodyValue(token.toBytes());
                     } catch (IOException e) {
                         return Mono.error(e);
                     }

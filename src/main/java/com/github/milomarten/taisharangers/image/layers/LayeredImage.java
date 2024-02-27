@@ -3,8 +3,15 @@ package com.github.milomarten.taisharangers.image.layers;
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.sources.ImageSource;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Mono;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
@@ -77,5 +84,17 @@ public class LayeredImage implements ImageSource {
             }
         }
         return bi;
+    }
+
+    public byte[] toBytes() throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ImageIO.write(toImage(), "png", os);
+        return os.toByteArray();
+    }
+
+    public OutputStream toStream() throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ImageIO.write(toImage(), "png", os);
+        return os;
     }
 }
