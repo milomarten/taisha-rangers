@@ -3,36 +3,17 @@ package com.github.milomarten.taisharangers.discord.commands;
 import com.github.milomarten.taisharangers.discord.StandardParams;
 import com.github.milomarten.taisharangers.discord.mapper.PokemonEmbedMapper;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.spec.EmbedCreateFields;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import discord4j.rest.util.Color;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.WordUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import skaro.pokeapi.client.PokeApiClient;
-import skaro.pokeapi.resource.Name;
-import skaro.pokeapi.resource.NamedApiResource;
 import skaro.pokeapi.resource.pokemon.Pokemon;
-import skaro.pokeapi.resource.pokemon.PokemonAbility;
 import skaro.pokeapi.resource.pokemonspecies.PokemonSpecies;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.stream.Collectors;
-
-import static com.github.milomarten.taisharangers.discord.StandardParams.SHARE_PARAMETER;
 
 @Component
 @RequiredArgsConstructor

@@ -1,16 +1,8 @@
 package com.github.milomarten.taisharangers.endpoints;
 
 import com.github.milomarten.taisharangers.image.Color;
-import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.gradients.TypeGradient;
-import com.github.milomarten.taisharangers.image.layers.Layer;
-import com.github.milomarten.taisharangers.image.layers.LayeredImage;
-import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
-import com.github.milomarten.taisharangers.image.sources.GradientSource;
 import com.github.milomarten.taisharangers.models.Gender;
-import com.github.milomarten.taisharangers.services.ColorGeneratorService;
-import com.github.milomarten.taisharangers.services.FrameGeneratorService;
-import com.github.milomarten.taisharangers.services.ImageRetrieveService;
 import com.github.milomarten.taisharangers.services.TokenGeneratorService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.EnumUtils;
@@ -23,8 +15,6 @@ import reactor.core.publisher.Mono;
 import skaro.pokeapi.client.PokeApiClient;
 import skaro.pokeapi.resource.pokemon.Pokemon;
 
-import javax.imageio.ImageIO;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Optional;
 

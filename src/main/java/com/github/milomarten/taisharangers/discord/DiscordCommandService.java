@@ -8,8 +8,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 /**
  * The service responsible for syncing the commands defined in code with Discord's repository.
  * Slash commands must be registered in Discord manually, and only through their API. This service attempts to

@@ -3,9 +3,6 @@ package com.github.milomarten.taisharangers.image.layers;
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.sources.ImageSource;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.server.ServerResponse;
-import reactor.core.publisher.Mono;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
