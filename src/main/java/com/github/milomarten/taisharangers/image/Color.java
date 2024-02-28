@@ -14,7 +14,12 @@ public record Color(int rgba) {
     /**
      * The fully opaque color white
      */
-    public static final Color WHITE = new Color(0, 0, 0, 255);
+    public static final Color WHITE = new Color(255, 255, 255, 255);
+
+    /**
+     * The fully opaque color black
+     */
+    public static final Color BLACK = new Color(0, 0, 0, 255);
 
     /**
      * Create a color from four doubles. Range of values should be 0 to 1.
@@ -139,5 +144,19 @@ public record Color(int rgba) {
      */
     public Color withAlpha01(double newA) {
         return withAlpha(((int)(newA * 255)) & 0xFF);
+    }
+
+    /**
+     * Invert this color.
+     * R, G, and B will be set to their opposite (new component = 255 - old component)
+     * @return The inverted color
+     */
+    public Color invert() {
+        var components = this.components();
+        components[0] = 255 - components[0];
+        components[1] = 255 - components[1];
+        components[2] = 255 - components[2];
+
+        return new Color(components[0], components[1], components[2], components[3]);
     }
 }

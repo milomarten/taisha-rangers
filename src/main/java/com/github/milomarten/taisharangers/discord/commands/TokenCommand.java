@@ -1,6 +1,7 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
 import com.github.milomarten.taisharangers.discord.StandardParams;
+import com.github.milomarten.taisharangers.image.effects.Effects;
 import com.github.milomarten.taisharangers.image.gradients.TypeGradient;
 import com.github.milomarten.taisharangers.image.layers.LayeredImage;
 import com.github.milomarten.taisharangers.models.Gender;
@@ -33,6 +34,7 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
     private static final String SHINY_PARAMETER = "shiny";
     private static final String COLOR_OVERRIDE_ONE_PARAMETER = "color-override-1";
     private static final String COLOR_OVERRIDE_TWO_PARAMETER = "color-override-2";
+    private static final String EFFECT_PARAMETER = "effect";
 
     private final PokeApiClient client;
     private final TokenGeneratorService service;
@@ -79,6 +81,13 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
                         .autocomplete(true)
                         .type(ApplicationCommandOption.Type.STRING.getValue())
                         .build())
+                .addOption(ApplicationCommandOptionData.builder()
+                        .name(EFFECT_PARAMETER)
+                        .description("Apply a specific effect to the token's appearance")
+                        .required(false)
+                        .autocomplete(true)
+                        .type(ApplicationCommandOption.Type.STRING.getValue())
+                        .build())
                 .addOption(StandardParams.shareParameter())
                 .build();
     }
@@ -117,6 +126,15 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
             }
             opts.secondColor(color.getDarker());
         }
+        var effectAttempt = event.getOption(EFFECT_PARAMETER)
+                .flatMap(a -> a.getValue()).map(a -> a.asString());
+        if (effectAttempt.isPresent()) {
+            var effect = EnumUtils.getEnumIgnoreCase(Effects.class, effectAttempt.get());
+            if (effect == null) {
+                return Try.failure("Invalid effect. Must be one of the magic strings I'm not sharing");
+            }
+            opts.effect(effect);
+        }
 
         return Try.success(new TokenCommandParams(id.get(), opts.build()));
     }
@@ -154,6 +172,10 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
         if (paramName.startsWith("color-override")) {
             return Arrays.stream(TypeGradient.values())
                     .map(tg -> new Choice(tg.name(), WordUtils.capitalize(tg.name())))
+                    .toList();
+        } else if (paramName.equals(EFFECT_PARAMETER)) {
+            return Arrays.stream(Effects.values())
+                    .map(e -> new Choice(e.name(), WordUtils.capitalize(e.name())))
                     .toList();
         } else {
             return null;

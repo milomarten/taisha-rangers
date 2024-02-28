@@ -1,6 +1,8 @@
 package com.github.milomarten.taisharangers.endpoints;
 
 import com.github.milomarten.taisharangers.image.Color;
+import com.github.milomarten.taisharangers.image.effects.Effects;
+import com.github.milomarten.taisharangers.image.effects.ImageEffect;
 import com.github.milomarten.taisharangers.image.gradients.TypeGradient;
 import com.github.milomarten.taisharangers.models.Gender;
 import com.github.milomarten.taisharangers.services.TokenGeneratorService;
@@ -17,6 +19,7 @@ import skaro.pokeapi.resource.pokemon.Pokemon;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Component
 @RequiredArgsConstructor
@@ -44,12 +47,15 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
         Optional<Color> secondOverride = request.queryParam("type2")
                 .map(s -> EnumUtils.getEnumIgnoreCase(TypeGradient.class, s))
                 .map(TypeGradient::getDarker);
+        Optional<Effects> spriteEffect = request.queryParam("effect")
+                .map(s -> EnumUtils.getEnumIgnoreCase(Effects.class, s));
 
         var customization = TokenGeneratorService.CustomizationOptions.builder()
                 .gender(gender)
                 .shiny(shiny)
                 .firstColor(firstOverride.orElse(null))
                 .secondColor(secondOverride.orElse(null))
+                .effect(spriteEffect.orElse(Effects.NONE))
                 .build();
 
         return (RANDOM_ID.equalsIgnoreCase(id) ?

@@ -2,6 +2,7 @@ package com.github.milomarten.taisharangers.services;
 
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.Point;
+import com.github.milomarten.taisharangers.image.effects.Effects;
 import com.github.milomarten.taisharangers.image.layers.Layer;
 import com.github.milomarten.taisharangers.image.layers.LayeredImage;
 import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
@@ -35,20 +36,26 @@ public class TokenGeneratorService {
         try {
             var image = new LayeredImage(TOKEN_WIDTH, TOKEN_HEIGHT);
             var frame = frameGeneratorService.createFrame();
-            image.addLayer(frame);
             image.addLayer(Layer.builder()
-                    .image(new GradientSource(
-                            GRADIENT_START_POINT,
-                            GRADIENT_END_POINT,
-                            Objects.requireNonNullElseGet(options.firstColor, () -> colorGeneratorService.getPrimaryForType(pokemon)),
-                            Objects.requireNonNullElseGet(options.secondColor, () -> colorGeneratorService.getSecondaryForType(pokemon))
-                    ))
-                    .opacity(GRADIENT_OPACITY)
-                    .mask(new MaskFromImage(frame))
+                    .image(frame)
+                    .effect(options.effect.getFrameEffect())
                     .build());
+            if (options.effect.isShowGradient()) {
+                image.addLayer(Layer.builder()
+                        .image(new GradientSource(
+                                GRADIENT_START_POINT,
+                                GRADIENT_END_POINT,
+                                Objects.requireNonNullElseGet(options.firstColor, () -> colorGeneratorService.getPrimaryForType(pokemon)),
+                                Objects.requireNonNullElseGet(options.secondColor, () -> colorGeneratorService.getSecondaryForType(pokemon))
+                        ))
+                        .opacity(GRADIENT_OPACITY)
+                        .mask(new MaskFromImage(frame))
+                        .build());
+            }
             image.addLayer(Layer.builder()
                     .image(imageRetrieveService.getSprite(pokemon, options.gender, options.shiny))
                     .offset(SPRITE_OFFSET)
+                    .effect(options.effect.getSpriteEffect())
                     .build()
             );
             return image;
@@ -62,7 +69,8 @@ public class TokenGeneratorService {
     public static class CustomizationOptions {
         private Color firstColor;
         private Color secondColor;
-        private Gender gender;
+        @Builder.Default private Gender gender = Gender.MALE;
         private boolean shiny;
+        @Builder.Default private Effects effect = Effects.NONE;
     }
 }

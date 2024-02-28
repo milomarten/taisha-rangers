@@ -4,6 +4,7 @@ import com.github.milomarten.taisharangers.image.BlendAlgorithm;
 import com.github.milomarten.taisharangers.image.BlendMode;
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.Point;
+import com.github.milomarten.taisharangers.image.effects.ImageEffect;
 import com.github.milomarten.taisharangers.image.sources.ImageSource;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,6 +36,11 @@ public class Layer {
     private Mask mask;
 
     /**
+     * If present, defines a pixel-by-pixel effect to apply to the image.
+     */
+    private ImageEffect effect;
+
+    /**
      * Get the color of this layer at a position, taking into account its various attributes.
      * @param x The horizontal X position
      * @param y The vertical Y position
@@ -44,7 +50,7 @@ public class Layer {
         int adjX = x - offset.x();
         int adjY = y - offset.y();
         if (image.isInBounds(adjX, adjY) && (mask == null || mask.shouldRender(adjX, adjY))) {
-            var raw = image.getPixel(adjX, adjY);
+            var raw = effect == null ? image.getPixel(adjX, adjY) : effect.getColor(image, adjX, adjY);
             var computedOpacity = raw.alpha01() * opacity;
             return raw.withAlpha01(computedOpacity);
         } else {
