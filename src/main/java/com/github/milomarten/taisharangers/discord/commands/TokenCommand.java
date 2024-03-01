@@ -40,11 +40,6 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommand.Parameters, 
     private final TokenGeneratorService service;
 
     @Override
-    protected boolean isEphemeral(ChatInputInteractionEvent event) {
-        return !StandardParams.isShare(event);
-    }
-
-    @Override
     public ApplicationCommandRequest getDiscordSpec() {
         return ApplicationCommandRequest.builder()
                 .name(getName())

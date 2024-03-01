@@ -1,5 +1,6 @@
 package com.github.milomarten.taisharangers.discord.commands;
 
+import com.github.milomarten.taisharangers.discord.StandardParams;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionReplyEditSpec;
 import reactor.core.publisher.Mono;
@@ -25,10 +26,10 @@ public abstract class AsyncResponseCommand<PARAM, RES> implements Command {
     public Mono<Void> handle(ChatInputInteractionEvent event) {
         var parse = parseParameters(event);
         if (parse.getError() != null) {
-            return event.reply(parse.getError()).withEphemeral(isEphemeral(event));
+            return event.reply(parse.getError()).withEphemeral(!isShare(event));
         }
         return event.deferReply()
-                .withEphemeral(isEphemeral(event))
+                .withEphemeral(!isShare(event))
                 .then(doAsyncOperations(parse.getObj()))
                 .flatMap(response -> event.editReply(formatResponse(response)))
                 .onErrorResume(t -> event.editReply(formatErrorResponse(t)))
@@ -37,13 +38,15 @@ public abstract class AsyncResponseCommand<PARAM, RES> implements Command {
     }
 
     /**
-     * Determine if the response should be ephemeral or not.
+     * Determine if the response should be shared or not.
      * Mostly to support "share" parameters, which I use frequently. All responses, including errors, will have the
      * same ephemeral parameter
      * @param event The event context
      * @return True if the response should be visible only to the user.
      */
-    protected abstract boolean isEphemeral(ChatInputInteractionEvent event);
+    protected boolean isShare(ChatInputInteractionEvent event) {
+        return StandardParams.isShare(event);
+    }
 
     /**
      * Attempt to parse the event context into a Parameter object

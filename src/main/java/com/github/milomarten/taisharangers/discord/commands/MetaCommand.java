@@ -9,16 +9,19 @@ import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 
 @Component
 @Slf4j
-public class MetaCommand extends AsyncResponseCommand<MetaCommand.Parameters, MetaCommand.Response> implements SupportsAutocomplete {
+public class MetaCommand extends AsyncResponseMultiCommand implements SupportsAutocomplete {
     public static final String INIT_COMMAND = "init";
     public static final String UPDATE_COMMAND = "update";
     public static final String DELETE_COMMAND = "delete";
@@ -29,8 +32,14 @@ public class MetaCommand extends AsyncResponseCommand<MetaCommand.Parameters, Me
     private final CommandPool commandPool;
 
     public MetaCommand(@Lazy DiscordCommandService discordCommandService, @Lazy CommandPool commandPool) {
+        super(new HashMap<>());
         this.discordCommandService = discordCommandService;
         this.commandPool = commandPool;
+
+        this.branches.put(INIT_COMMAND, new SingleIdOperationBranch(discordCommandService::initializeCommand, "initialized"));
+        this.branches.put(UPDATE_COMMAND, new SingleIdOperationBranch(discordCommandService::updateCommand, "updated"));
+        this.branches.put(DELETE_COMMAND, new SingleIdOperationBranch(discordCommandService::deleteCommand, "deleted"));
+        this.branches.put(PATCH_COMMAND, new PatchBranch());
     }
 
     @Override
@@ -81,64 +90,6 @@ public class MetaCommand extends AsyncResponseCommand<MetaCommand.Parameters, Me
     }
 
     @Override
-    protected boolean isEphemeral(ChatInputInteractionEvent event) {
-        return true;
-    }
-
-    @Override
-    protected Try<Parameters> parseParameters(ChatInputInteractionEvent event) {
-        var options = event.getOptions();
-        if (options.isEmpty()) {
-            return Try.failure("Need root parameter??");
-        }
-        var op = options.get(0);
-
-        var opMaybe = switch (op.getName()) {
-            case INIT_COMMAND -> MetaType.INITIALIZE;
-            case UPDATE_COMMAND -> MetaType.UPDATE;
-            case DELETE_COMMAND -> MetaType.DELETE;
-            case PATCH_COMMAND -> MetaType.PATCH;
-            default -> null;
-        };
-        if (opMaybe == null) {
-            return Try.failure("Need correct subcommand");
-        }
-
-        var idMaybe = op.getOption("id")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        if (idMaybe.isEmpty() && opMaybe != MetaType.PATCH) {
-            return Try.failure("Need ID");
-        }
-        return Try.success(new Parameters(opMaybe, idMaybe.orElse(null)));
-    }
-
-    @Override
-    protected Mono<Response> doAsyncOperations(Parameters parameters) {
-        var cmd = switch (parameters.type()) {
-            case INITIALIZE -> discordCommandService.initializeCommand(parameters.id());
-            case UPDATE -> discordCommandService.updateCommand(parameters.id());
-            case DELETE -> discordCommandService.deleteCommand(parameters.id());
-            case PATCH -> discordCommandService.patch().thenReturn(true);
-        };
-        return cmd.map(success -> new Response(parameters.type(), parameters.id(), success));
-    }
-
-    @Override
-    protected InteractionReplyEditSpec formatResponse(Response response) {
-        var verb = switch (response.type()) {
-            case INITIALIZE -> "created";
-            case UPDATE -> "updated";
-            case DELETE -> "deleted";
-            case PATCH -> "patched";
-        };
-        var string = response.success() ?
-                String.format("Command `%s` was successfully %s!", response.id(), verb) :
-                String.format("Command `%s` wasn't %s. Is the name correct?", response.id(), verb);
-        return InteractionReplyEditSpec.builder().contentOrNull(string).build();
-    }
-
-    @Override
     public boolean supportsCommand(String commandName) {
         return commandName.equals(getName());
     }
@@ -151,14 +102,61 @@ public class MetaCommand extends AsyncResponseCommand<MetaCommand.Parameters, Me
                 .map(Choice::fromString)
                 .toList();
     }
+    record SingleIdResponse(String id, boolean success) {}
 
-    record Parameters(MetaType type, String id) {}
+    @RequiredArgsConstructor
+    private static class SingleIdOperationBranch extends Branch<String, SingleIdResponse> {
+        private final Function<String, Mono<Boolean>> operation;
+        private final String verb;
 
-    record Response(MetaType type, String id, boolean success) {}
-}
-enum MetaType {
-    INITIALIZE,
-    UPDATE,
-    DELETE,
-    PATCH
+        @Override
+        protected Try<String> parseParameters(ChatInputInteractionEvent event, ApplicationCommandInteractionOption options) {
+            return options.getOption("id")
+                    .flatMap(a -> a.getValue())
+                    .map(a -> a.asString())
+                    .map(Try::success)
+                    .orElseGet(() -> Try.failure("ID not present"));
+        }
+
+        @Override
+        protected Mono<SingleIdResponse> doAsyncOperations(String parameters) {
+            return operation.apply(parameters).map(b -> new SingleIdResponse(parameters, b));
+        }
+
+        @Override
+        protected InteractionReplyEditSpec formatResponse(SingleIdResponse response) {
+            return InteractionReplyEditSpec.builder()
+                    .contentOrNull(response.success ?
+                            String.format("Command `%s` was successfully %s.", response.id, this.verb) :
+                            String.format("Command `%s` could not be %s.", response.id, this.verb))
+                    .build();
+        }
+
+        @Override
+        protected boolean isShare(ApplicationCommandInteractionOption options) {
+            return false;
+        }
+    }
+
+    private class PatchBranch extends Branch<Void, Void> {
+        @Override
+        protected Try<Void> parseParameters(ChatInputInteractionEvent event, ApplicationCommandInteractionOption options) {
+            return Try.success(null);
+        }
+
+        @Override
+        protected Mono<Void> doAsyncOperations(Void parameters) {
+            return discordCommandService.patch();
+        }
+
+        @Override
+        protected InteractionReplyEditSpec formatResponse(Void response) {
+            return InteractionReplyEditSpec.builder().contentOrNull("Commands were patched.").build();
+        }
+
+        @Override
+        protected boolean isShare(ApplicationCommandInteractionOption options) {
+            return false;
+        }
+    }
 }

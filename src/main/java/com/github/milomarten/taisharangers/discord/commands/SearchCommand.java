@@ -41,11 +41,6 @@ public class SearchCommand extends AsyncResponseCommand<PokemonSearchParams, Lis
     }
 
     @Override
-    protected boolean isEphemeral(ChatInputInteractionEvent event) {
-        return !StandardParams.isShare(event);
-    }
-
-    @Override
     protected Try<PokemonSearchParams> parseParameters(ChatInputInteractionEvent event) {
         return Try.success(StandardParams.getSearchParams(event));
     }

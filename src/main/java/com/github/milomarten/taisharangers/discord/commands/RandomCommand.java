@@ -64,8 +64,8 @@ public class RandomCommand extends AsyncResponseCommand<RandomCommand.Parameters
     }
 
     @Override
-    protected boolean isEphemeral(ChatInputInteractionEvent event) {
-        return !StandardParams.isShare(event.getOption("pokemon").orElseThrow());
+    protected boolean isShare(ChatInputInteractionEvent event) {
+        return StandardParams.isShare(event.getOption("pokemon").orElseThrow());
     }
 
     @Override
