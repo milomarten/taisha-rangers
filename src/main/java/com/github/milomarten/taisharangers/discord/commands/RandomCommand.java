@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Pokemon, PokemonSpecies>>> {
+public class RandomCommand extends AsyncResponseCommand<RandomCommand.Parameters, List<Tuple2<Pokemon, PokemonSpecies>>> {
     private final RandomPokemonService randomPokemonService;
 
     private final PokeApiClient client;
@@ -69,7 +69,7 @@ public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Poke
     }
 
     @Override
-    protected Try<Params> parseParameters(ChatInputInteractionEvent event) {
+    protected Try<Parameters> parseParameters(ChatInputInteractionEvent event) {
         var pkmn = event.getOption("pokemon");
         if (pkmn.isEmpty()) {
             return Try.failure("Can only generate Pokemon.");
@@ -87,11 +87,11 @@ public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Poke
         }
         var query = StandardParams.getSearchParams(options);
 
-        return Try.success(new Params((int) count, query));
+        return Try.success(new Parameters((int) count, query));
     }
 
     @Override
-    protected Mono<List<Tuple2<Pokemon, PokemonSpecies>>> doAsyncOperations(Params parameters) {
+    protected Mono<List<Tuple2<Pokemon, PokemonSpecies>>> doAsyncOperations(Parameters parameters) {
         return randomPokemonService.getRandomPokemon(parameters.query(), parameters.count())
                 .flatMap(p -> {
                     return client.followResource(p::getSpecies, PokemonSpecies.class)
@@ -122,6 +122,6 @@ public class RandomCommand extends AsyncResponseCommand<Params, List<Tuple2<Poke
                     .build();
         }
     }
-}
 
-record Params (int count, PokemonSearchParams query) {}
+    record Parameters(int count, PokemonSearchParams query) {}
+}

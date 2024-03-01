@@ -18,7 +18,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class MetaCommand extends AsyncResponseCommand<Parameters, Response> implements SupportsAutocomplete {
+public class MetaCommand extends AsyncResponseCommand<MetaCommand.Parameters, MetaCommand.Response> implements SupportsAutocomplete {
     public static final String INIT_COMMAND = "init";
     public static final String UPDATE_COMMAND = "update";
     public static final String DELETE_COMMAND = "delete";
@@ -151,6 +151,10 @@ public class MetaCommand extends AsyncResponseCommand<Parameters, Response> impl
                 .map(Choice::fromString)
                 .toList();
     }
+
+    record Parameters(MetaType type, String id) {}
+
+    record Response(MetaType type, String id, boolean success) {}
 }
 enum MetaType {
     INITIALIZE,
@@ -158,7 +162,3 @@ enum MetaType {
     DELETE,
     PATCH
 }
-
-record Parameters(MetaType type, String id) {}
-
-record Response(MetaType type, String id, boolean success) {}

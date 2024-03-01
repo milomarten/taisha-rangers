@@ -28,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @Component
-public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, LayeredImage> implements SupportsAutocomplete {
+public class TokenCommand extends AsyncResponseCommand<TokenCommand.Parameters, LayeredImage> implements SupportsAutocomplete {
     private static final String ID_PARAMETER = "id";
     private static final String GENDER_PARAMETER = "gender";
     private static final String SHINY_PARAMETER = "shiny";
@@ -93,7 +93,7 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
     }
 
     @Override
-    protected Try<TokenCommandParams> parseParameters(ChatInputInteractionEvent event) {
+    protected Try<Parameters> parseParameters(ChatInputInteractionEvent event) {
         var id = event.getOption(ID_PARAMETER)
                 .flatMap(a -> a.getValue())
                 .map(a -> a.asString());
@@ -136,11 +136,11 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
             opts.effect(effect);
         }
 
-        return Try.success(new TokenCommandParams(id.get(), opts.build()));
+        return Try.success(new Parameters(id.get(), opts.build()));
     }
 
     @Override
-    protected Mono<LayeredImage> doAsyncOperations(TokenCommandParams parameters) {
+    protected Mono<LayeredImage> doAsyncOperations(Parameters parameters) {
         return client.getResource(Pokemon.class, parameters.id())
                 .map(pkmn -> service.generateToken(pkmn, parameters.opts()));
     }
@@ -181,6 +181,6 @@ public class TokenCommand extends AsyncResponseCommand<TokenCommandParams, Layer
             return null;
         }
     }
-}
 
-record TokenCommandParams(String id, TokenGeneratorService.CustomizationOptions opts) {}
+    record Parameters(String id, TokenGeneratorService.CustomizationOptions opts) {}
+}
