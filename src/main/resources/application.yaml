@@ -2,4 +2,5 @@ skaro:
   pokeapi:
     base-uri: https://pokeapi.co/api/v2/
     graphql-url: https://beta.pokeapi.co/graphql/v1beta
+    max-bytes-to-buffer: 1_000_000
 
