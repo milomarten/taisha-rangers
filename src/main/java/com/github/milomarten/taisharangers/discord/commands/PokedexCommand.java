@@ -44,11 +44,6 @@ public class PokedexCommand extends AsyncResponseCommand<String, Tuple2<Pokemon,
     }
 
     @Override
-    protected boolean isEphemeral(ChatInputInteractionEvent event) {
-        return !StandardParams.isShare(event);
-    }
-
-    @Override
     protected Try<String> parseParameters(ChatInputInteractionEvent event) {
         return event.getOption("name")
                 .flatMap(a -> a.getValue())
