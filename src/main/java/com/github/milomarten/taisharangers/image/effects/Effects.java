@@ -9,11 +9,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum Effects {
     NONE(new NoopEffect(), true, new NoopEffect()),
-    SHADOW(new ShadowEffect(), false, ColorMapEffect.builder()
-            .colorMapping(new Color(38, 50, 56), Color.WHITE)
-            .colorMapping(Color.WHITE, new Color(30, 30, 30))
-            .build()),
-    INVERT(new InvertEffect(), true, new InvertEffect());
+    SHADOW(new ShadowEffect(), false, new FrameRecolorEffect(Color.WHITE, new Color(30, 30, 30))),
+    INVERT(new InvertEffect(), true, new InvertEffect()),
+    POLICE(new NoopEffect(), true, new FrameRecolorEffect(new Color(64, 72, 204), null))
+    ;
 
     private final ImageEffect spriteEffect;
     private final boolean showGradient;

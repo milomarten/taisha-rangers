@@ -3,6 +3,7 @@ package com.github.milomarten.taisharangers.services;
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.effects.Effects;
+import com.github.milomarten.taisharangers.image.layers.FrameMask;
 import com.github.milomarten.taisharangers.image.layers.Layer;
 import com.github.milomarten.taisharangers.image.layers.LayeredImage;
 import com.github.milomarten.taisharangers.image.layers.MaskFromImage;
@@ -49,7 +50,7 @@ public class TokenGeneratorService {
                                 Objects.requireNonNullElseGet(options.secondColor, () -> colorGeneratorService.getSecondaryForType(pokemon))
                         ))
                         .opacity(GRADIENT_OPACITY)
-                        .mask(new MaskFromImage(frame))
+                        .mask(new FrameMask(frame))
                         .build());
             }
             image.addLayer(Layer.builder()
