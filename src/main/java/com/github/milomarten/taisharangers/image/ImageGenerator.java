@@ -41,36 +41,39 @@ public class ImageGenerator implements ApplicationRunner {
             return;
         }
         log.info("Creating default tokens for all Pokemon.");
-        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(tokensFile));
-        client.getResource(Pokemon.class, new PageQuery(100_000, 0))
-                .flatMapIterable(NamedApiResourceList::getResults)
-                .flatMap(nam -> client.followResource(() -> nam, Pokemon.class))
-                .flatMap(pkmn -> {
-                    String name = pkmn.getName();
-                    var img = tokenGeneratorService.generateToken(pkmn, NORMAL);
-                    var shadow_img = tokenGeneratorService.generateToken(pkmn, SHADOW);
-                    if (img == null || shadow_img == null) {
-                        log.error("Encountered a weird guy: {}", name);
-                        return Mono.empty();
-                    }
+        Mono.using(
+                () -> new ZipOutputStream(new FileOutputStream(tokensFile)),
+                zipOut -> {
+                    return client.getResource(Pokemon.class, new PageQuery(100_000, 0))
+                            .flatMapIterable(NamedApiResourceList::getResults)
+                            .flatMap(nam -> client.followResource(() -> nam, Pokemon.class))
+                            .flatMap(pkmn -> {
+                                String name = pkmn.getName();
+                                var img = tokenGeneratorService.generateToken(pkmn, NORMAL);
+                                var shadow_img = tokenGeneratorService.generateToken(pkmn, SHADOW);
+                                if (img == null || shadow_img == null) {
+                                    log.error("Encountered a weird guy: {}", name);
+                                    return Mono.empty();
+                                }
+                                try {
+                                    zipOut.putNextEntry(new ZipEntry(name + ".png"));
+                                    zipOut.write(img.toBytes());
+                                    zipOut.putNextEntry(new ZipEntry(name + "_shadow.png"));
+                                    zipOut.write(shadow_img.toBytes());
+                                    return Mono.just(pkmn);
+                                } catch (IOException e) {
+                                    return Mono.error(e);
+                                }
+                            }).collectList();
+                },
+                z -> {
                     try {
-                        zipOut.putNextEntry(new ZipEntry(name + ".png"));
-                        zipOut.write(img.toBytes());
-                        zipOut.putNextEntry(new ZipEntry(name + "_shadow.png"));
-                        zipOut.write(shadow_img.toBytes());
-                        return Mono.just(pkmn);
-                    } catch (IOException e) {
-                        return Mono.error(e);
-                    }
-                })
-                .doOnComplete(() -> {
-                    try {
-                        zipOut.close();
                         log.info("Completed token generation. Saved to {}", tokensFile.getCanonicalPath());
+                        z.close();
                     } catch (IOException e) {
-                        throw new RuntimeException("Error closing zip file", e);
+                        throw new RuntimeException(e);
                     }
-                })
-                .subscribe();
+                }
+        ).subscribe();
     }
 }
