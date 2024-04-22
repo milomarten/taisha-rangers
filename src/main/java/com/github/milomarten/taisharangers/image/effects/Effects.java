@@ -10,8 +10,7 @@ import lombok.RequiredArgsConstructor;
 public enum Effects {
     NONE(new NoopEffect(), true, new NoopEffect()),
     SHADOW(new ShadowEffect(), false, new FrameRecolorEffect(Color.WHITE, new Color(30, 30, 30))),
-    INVERT(new InvertEffect(), true, new InvertEffect()),
-    POLICE(new NoopEffect(), true, new FrameRecolorEffect(new Color(64, 72, 204), null))
+    INVERT(new InvertEffect(), true, new InvertEffect())
     ;
 
     private final ImageEffect spriteEffect;

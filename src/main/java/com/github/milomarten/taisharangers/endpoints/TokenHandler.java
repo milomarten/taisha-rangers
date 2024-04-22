@@ -2,7 +2,7 @@ package com.github.milomarten.taisharangers.endpoints;
 
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.effects.Effects;
-import com.github.milomarten.taisharangers.image.effects.ImageEffect;
+import com.github.milomarten.taisharangers.image.effects.Faction;
 import com.github.milomarten.taisharangers.image.gradients.TypeGradient;
 import com.github.milomarten.taisharangers.models.Gender;
 import com.github.milomarten.taisharangers.services.TokenGeneratorService;
@@ -49,6 +49,8 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                 .map(TypeGradient::getDarker);
         Optional<Effects> spriteEffect = request.queryParam("effect")
                 .map(s -> EnumUtils.getEnumIgnoreCase(Effects.class, s));
+        Optional<Faction> faction = request.queryParam("faction")
+                .map(s -> EnumUtils.getEnumIgnoreCase(Faction.class, s));
 
         var customization = TokenGeneratorService.CustomizationOptions.builder()
                 .gender(gender)
@@ -56,6 +58,7 @@ public class TokenHandler implements HandlerFunction<ServerResponse> {
                 .firstColor(firstOverride.orElse(null))
                 .secondColor(secondOverride.orElse(null))
                 .effect(spriteEffect.orElse(Effects.NONE))
+                .faction(faction.orElse(Faction.NONE))
                 .build();
 
         return (RANDOM_ID.equalsIgnoreCase(id) ?

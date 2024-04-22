@@ -3,6 +3,7 @@ package com.github.milomarten.taisharangers.services;
 import com.github.milomarten.taisharangers.image.Color;
 import com.github.milomarten.taisharangers.image.Point;
 import com.github.milomarten.taisharangers.image.effects.Effects;
+import com.github.milomarten.taisharangers.image.effects.Faction;
 import com.github.milomarten.taisharangers.image.layers.FrameMask;
 import com.github.milomarten.taisharangers.image.layers.Layer;
 import com.github.milomarten.taisharangers.image.layers.LayeredImage;
@@ -52,6 +53,10 @@ public class TokenGeneratorService {
                         .opacity(GRADIENT_OPACITY)
                         .mask(new FrameMask(frame))
                         .build());
+
+                if (options.faction != Faction.NONE) {
+                    image.addLayer(frameGeneratorService.createFrame(options.faction));
+                }
             }
             image.addLayer(Layer.builder()
                     .image(imageRetrieveService.getSprite(pokemon, options.gender, options.shiny))
@@ -73,5 +78,6 @@ public class TokenGeneratorService {
         @Builder.Default private Gender gender = Gender.MALE;
         private boolean shiny;
         @Builder.Default private Effects effect = Effects.NONE;
+        @Builder.Default private Faction faction = Faction.NONE;
     }
 }
