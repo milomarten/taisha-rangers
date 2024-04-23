@@ -7,7 +7,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum Faction {
     NONE("frame.png"),
-    POLICE("frame-police.png");
+    POLICE("frame-police.png"),
+    GANG("frame-gang.png"),
+    BANK("frame-bank.png")
+    ;
 
     private final String filename;
 }
