@@ -37,27 +37,35 @@ public class TokenGeneratorService {
     public LayeredImage generateToken(Pokemon pokemon, CustomizationOptions options) {
         try {
             var image = new LayeredImage(TOKEN_WIDTH, TOKEN_HEIGHT);
+
+            // Base frame - Black outline, white insides
             var frame = frameGeneratorService.createFrame();
             image.addLayer(Layer.builder()
                     .image(frame)
                     .effect(options.effect.getFrameEffect())
                     .build());
-            if (options.effect.isShowGradient()) {
-                image.addLayer(Layer.builder()
-                        .image(new GradientSource(
-                                GRADIENT_START_POINT,
-                                GRADIENT_END_POINT,
-                                Objects.requireNonNullElseGet(options.firstColor, () -> colorGeneratorService.getPrimaryForType(pokemon)),
-                                Objects.requireNonNullElseGet(options.secondColor, () -> colorGeneratorService.getSecondaryForType(pokemon))
-                        ))
-                        .opacity(GRADIENT_OPACITY)
-                        .mask(new FrameMask(frame))
-                        .build());
 
-                if (options.faction != Faction.NONE) {
-                    image.addLayer(frameGeneratorService.createFrame(options.faction));
-                }
+            // Gradient overlay
+            var firstColor = Objects.requireNonNullElseGet(options.firstColor, () -> colorGeneratorService.getPrimaryForType(pokemon));
+            var secondColor = Objects.requireNonNullElseGet(options.secondColor, () -> colorGeneratorService.getSecondaryForType(pokemon));
+            options.effect.getShowGradient().init(firstColor, secondColor);
+            image.addLayer(Layer.builder()
+                    .image(new GradientSource(
+                            GRADIENT_START_POINT,
+                            GRADIENT_END_POINT,
+                            options.effect.getShowGradient().getFirstColor(firstColor),
+                            options.effect.getShowGradient().getSecondColor(secondColor)
+                    ))
+                    .opacity(GRADIENT_OPACITY)
+                    .mask(new FrameMask(frame))
+                    .build());
+
+            // Faction Frame
+            if (options.faction != Faction.NONE) {
+                image.addLayer(frameGeneratorService.createFrame(options.faction));
             }
+
+            // Pokemon Sprite
             image.addLayer(Layer.builder()
                     .image(imageRetrieveService.getSprite(pokemon, options.gender, options.shiny))
                     .offset(SPRITE_OFFSET)
